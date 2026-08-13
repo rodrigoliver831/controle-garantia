@@ -1,0 +1,4583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Controle de Garantias e Devoluções</title>
+
+  <!-- =========================================================
+       BIBLIOTECAS
+  ========================================================== -->
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+
+  <style>
+
+    /* =========================================================
+       RESET
+    ========================================================== */
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family:
+        'Segoe UI',
+        Tahoma,
+        Geneva,
+        Verdana,
+        sans-serif;
+
+      background:
+        linear-gradient(
+          180deg,
+          #f4f6f9 0%,
+          #eef2f7 100%
+        );
+
+      color: #333;
+      padding: 20px 15px;
+    }
+
+
+    /* =========================================================
+       LOGIN
+    ========================================================== */
+
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+
+      width: 100vw;
+      height: 100vh;
+
+      background:
+        linear-gradient(
+          135deg,
+          #111827,
+          #1f2937,
+          #374151
+        );
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      z-index: 99999;
+
+      padding: 20px;
+    }
+
+    .login-card {
+      background: #fff;
+
+      width: 100%;
+      max-width: 400px;
+
+      padding: 35px 30px;
+
+      border-radius: 16px;
+
+      box-shadow:
+        0 25px 60px rgba(0,0,0,.35);
+
+      text-align: center;
+    }
+
+    .login-logo {
+      width: 180px;
+      height: 90px;
+
+      object-fit: contain;
+
+      margin: 0 auto 20px;
+
+      display: block;
+    }
+
+    .login-card h2 {
+      color: #1f2937;
+
+      font-size: 1.45rem;
+
+      margin-bottom: 25px;
+
+      border: none;
+    }
+
+    .login-group {
+      display: flex;
+      flex-direction: column;
+
+      text-align: left;
+
+      margin-bottom: 16px;
+    }
+
+    .login-group label {
+      font-size: .85rem;
+
+      font-weight: 700;
+
+      color: #4b5563;
+
+      margin-bottom: 6px;
+    }
+
+    .login-group input {
+      width: 100%;
+
+      padding: 12px 13px;
+
+      border:
+        1px solid #cbd5e1;
+
+      border-radius: 7px;
+
+      font-size: .95rem;
+
+      outline: none;
+    }
+
+    .login-group input:focus {
+      border-color: #3182ce;
+
+      box-shadow:
+        0 0 0 3px rgba(49,130,206,.15);
+    }
+
+    .btn-login {
+      width: 100%;
+
+      padding: 13px;
+
+      margin-top: 8px;
+
+      border: none;
+
+      border-radius: 7px;
+
+      background: #3182ce;
+
+      color: #fff;
+
+      font-size: 1rem;
+
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    .btn-login:hover {
+      background: #2563a8;
+    }
+
+    .login-error {
+      display: none;
+
+      margin-top: 13px;
+
+      color: #dc2626;
+
+      font-size: .85rem;
+
+      font-weight: 600;
+    }
+
+
+    /* =========================================================
+       BARRA SUPERIOR
+    ========================================================== */
+
+    .top-bar {
+      max-width: 1150px;
+
+      margin:
+        0 auto 15px;
+
+      padding: 10px 16px;
+
+      background: #fff;
+
+      border-radius: 10px;
+
+      box-shadow:
+        0 2px 8px rgba(0,0,0,.06);
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      gap: 10px;
+
+      flex-wrap: wrap;
+    }
+
+    .user-info {
+      font-size: .9rem;
+
+      color: #4b5563;
+    }
+
+    .user-info strong {
+      color: #2563eb;
+    }
+
+    .top-actions {
+      display: flex;
+
+      gap: 7px;
+
+      flex-wrap: wrap;
+    }
+
+    .btn-users,
+    .btn-logout,
+    .btn-refresh {
+      border: none;
+
+      padding: 7px 11px;
+
+      border-radius: 6px;
+
+      color: #fff;
+
+      font-size: .82rem;
+
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    .btn-users {
+      background: #4b5563;
+    }
+
+    .btn-users:hover {
+      background: #374151;
+    }
+
+    .btn-refresh {
+      background: #0f766e;
+    }
+
+    .btn-refresh:hover {
+      background: #115e59;
+    }
+
+    .btn-logout {
+      background: #dc2626;
+    }
+
+    .btn-logout:hover {
+      background: #b91c1c;
+    }
+
+
+    /* =========================================================
+       CONTAINER / LOGO
+    ========================================================== */
+
+    .container {
+      width: 100%;
+      max-width: 1150px;
+
+      margin: 0 auto;
+    }
+
+    .header-logo {
+      width: 100%;
+
+      min-height: 95px;
+
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
+      margin-bottom: 18px;
+    }
+
+    .header-logo img {
+      display: block;
+
+      width: auto;
+
+      max-width: min(330px, 80vw);
+
+      height: auto;
+
+      max-height: 100px;
+
+      object-fit: contain;
+
+      filter:
+        drop-shadow(0 3px 5px rgba(0,0,0,.12));
+    }
+
+
+    /* =========================================================
+       CARDS
+    ========================================================== */
+
+    .card {
+      background: #fff;
+
+      padding: 24px;
+
+      border-radius: 12px;
+
+      box-shadow:
+        0 4px 15px rgba(0,0,0,.07);
+
+      margin-bottom: 22px;
+    }
+
+    h2 {
+      color: #1f2937;
+
+      font-size: 1.25rem;
+
+      margin-bottom: 18px;
+
+      border-bottom:
+        2px solid #edf2f7;
+
+      padding-bottom: 10px;
+    }
+
+
+    /* =========================================================
+       FORMULÁRIOS
+    ========================================================== */
+
+    .form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          auto-fit,
+          minmax(175px, 1fr)
+        );
+
+      gap: 15px;
+    }
+
+    .form-group {
+      display: flex;
+
+      flex-direction: column;
+    }
+
+    .form-group label {
+      margin-bottom: 6px;
+
+      color: #4b5563;
+
+      font-weight: 700;
+
+      font-size: .86rem;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+
+      padding: 10px 12px;
+
+      border:
+        1px solid #cbd5e1;
+
+      border-radius: 6px;
+
+      font-size: .92rem;
+
+      color: #1f2937;
+
+      background: #fff;
+
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #3182ce;
+
+      box-shadow:
+        0 0 0 3px rgba(49,130,206,.12);
+    }
+
+
+    /* =========================================================
+       BOTÕES
+    ========================================================== */
+
+    .btn-container {
+      display: flex;
+
+      gap: 8px;
+
+      margin-top: 16px;
+
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 16px;
+
+      border: none;
+
+      border-radius: 6px;
+
+      font-size: .9rem;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 6px;
+
+      transition: .2s;
+    }
+
+    .btn-add {
+      background: #3182ce;
+      color: #fff;
+    }
+
+    .btn-add:hover {
+      background: #2563a8;
+    }
+
+    .btn-cancel {
+      background: #718096;
+      color: #fff;
+
+      display: none;
+    }
+
+    .btn-excel {
+      background: #276749;
+      color: #fff;
+    }
+
+    .btn-excel:hover {
+      background: #1f5138;
+    }
+
+    .btn-pdf {
+      background: #c53030;
+      color: #fff;
+    }
+
+    .btn-pdf:hover {
+      background: #9b2c2c;
+    }
+
+
+    /* =========================================================
+       KPIs
+    ========================================================== */
+
+    .kpi-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          auto-fit,
+          minmax(180px, 1fr)
+        );
+
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: #fff;
+
+      border-radius: 10px;
+
+      padding: 16px 18px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-left:
+        5px solid #cbd5e0;
+
+      box-shadow:
+        0 2px 6px rgba(0,0,0,.04);
+
+      display: flex;
+
+      flex-direction: column;
+    }
+
+    .kpi-total {
+      border-left-color: #3182ce;
+    }
+
+    .kpi-pago {
+      border-left-color: #38a169;
+    }
+
+    .kpi-saldo {
+      border-left-color: #dd6b20;
+    }
+
+    .kpi-coletado {
+      border-left-color: #319795;
+    }
+
+    .kpi-nao-coletado {
+      border-left-color: #e53e3e;
+    }
+
+    .kpi-title {
+      font-size: .78rem;
+
+      color: #718096;
+
+      font-weight: 800;
+
+      text-transform: uppercase;
+
+      margin-bottom: 6px;
+    }
+
+    .kpi-value {
+      font-size: 1.2rem;
+
+      font-weight: 800;
+
+      color: #2d3748;
+    }
+
+    .kpi-sub {
+      font-size: .75rem;
+
+      color: #a0aec0;
+
+      margin-top: 4px;
+    }
+
+
+    /* =========================================================
+       FILTROS
+    ========================================================== */
+
+    .filter-box {
+      margin-bottom: 15px;
+
+      display: flex;
+
+      gap: 10px;
+
+      align-items: center;
+
+      flex-wrap: wrap;
+
+      background: #f7fafc;
+
+      padding: 12px;
+
+      border-radius: 8px;
+
+      border:
+        1px solid #e2e8f0;
+    }
+
+    .filter-group {
+      display: flex;
+
+      align-items: center;
+
+      gap: 7px;
+    }
+
+    .filter-box input,
+    .filter-box select {
+      padding: 8px 10px;
+
+      border:
+        1px solid #cbd5e0;
+
+      border-radius: 6px;
+
+      font-size: .85rem;
+
+      background: #fff;
+    }
+
+
+    /* =========================================================
+       TABELA
+    ========================================================== */
+
+    .table-container {
+      overflow-x: auto;
+
+      margin-top: 10px;
+
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+
+      border-collapse: collapse;
+
+      text-align: left;
+
+      min-width: 1050px;
+    }
+
+    th,
+    td {
+      padding: 10px 11px;
+
+      border-bottom:
+        1px solid #e2e8f0;
+
+      vertical-align: middle;
+
+      font-size: .84rem;
+    }
+
+    th {
+      background: #f7fafc;
+
+      color: #4a5568;
+
+      font-weight: 800;
+
+      font-size: .76rem;
+
+      text-transform: uppercase;
+
+      white-space: nowrap;
+    }
+
+    tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    tr:hover {
+      background: #f1f5f9;
+    }
+
+
+    /* =========================================================
+       STATUS
+    ========================================================== */
+
+    .btn-status {
+      display: inline-block;
+
+      padding: 5px 9px;
+
+      border-radius: 12px;
+
+      font-size: .74rem;
+
+      font-weight: 800;
+
+      border: none;
+
+      cursor: pointer;
+
+      white-space: nowrap;
+    }
+
+    .status-coletado {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .status-nao-coletado {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+
+    /* =========================================================
+       PAGAMENTO
+    ========================================================== */
+
+    .badge-pago,
+    .badge-parcial,
+    .badge-pendente {
+      display: inline-block;
+
+      padding: 3px 6px;
+
+      border-radius: 5px;
+
+      font-weight: 800;
+
+      font-size: .7rem;
+
+      margin-top: 3px;
+
+      white-space: nowrap;
+    }
+
+    .badge-pago {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .badge-parcial {
+      background: #feebc8;
+      color: #744210;
+    }
+
+    .badge-pendente {
+      background: #fed7d7;
+      color: #742a2a;
+    }
+
+    .saldo-text {
+      font-weight: 800;
+
+      color: #dc2626;
+    }
+
+
+    /* =========================================================
+       AÇÕES - EDITAR / EXCLUIR
+    ========================================================== */
+
+    .acoes {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: flex-start;
+
+      gap: 4px;
+
+      white-space: nowrap;
+    }
+
+    .btn-action {
+      border: none;
+
+      padding: 5px 7px;
+
+      font-size: .72rem;
+
+      line-height: 1;
+
+      border-radius: 4px;
+
+      cursor: pointer;
+
+      font-weight: 700;
+
+      white-space: nowrap;
+
+      margin: 0;
+    }
+
+    .btn-edit {
+      background: #d69e2e;
+      color: #fff;
+    }
+
+    .btn-edit:hover {
+      background: #b7791f;
+    }
+
+    .btn-delete {
+      background: #e53e3e;
+      color: #fff;
+    }
+
+    .btn-delete:hover {
+      background: #c53030;
+    }
+
+
+    /* =========================================================
+       USUÁRIOS
+    ========================================================== */
+
+    .user-table {
+      min-width: 600px;
+    }
+
+    code {
+      background: #edf2f7;
+
+      padding: 3px 5px;
+
+      border-radius: 4px;
+    }
+
+
+    /* =========================================================
+       STATUS DO SERVIDOR
+    ========================================================== */
+
+    .server-status {
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      font-size: .75rem;
+
+      font-weight: 700;
+
+      margin-left: 8px;
+    }
+
+    .server-online {
+      color: #15803d;
+    }
+
+    .server-offline {
+      color: #dc2626;
+    }
+
+    .loading {
+      opacity: .55;
+
+      pointer-events: none;
+    }
+
+
+    /* =========================================================
+       RESPONSIVO
+    ========================================================== */
+
+    @media (max-width: 700px) {
+
+      body {
+        padding: 10px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .top-bar {
+        align-items: flex-start;
+      }
+
+      .top-actions {
+        width: 100%;
+      }
+
+      .top-actions button {
+        flex: 1;
+      }
+
+      .header-logo img {
+        max-width: 260px;
+        max-height: 85px;
+      }
+
+      .filter-group {
+        width: 100%;
+
+        flex-direction: column;
+
+        align-items: stretch;
+      }
+
+      .filter-group input,
+      .filter-group select {
+        width: 100%;
+      }
+
+      .btn-container .btn {
+        flex: 1;
+      }
+
+    }
+
+
+    /* =========================================================
+       IMPRESSÃO
+    ========================================================== */
+
+    @media print {
+
+      body {
+        background: #fff;
+
+        padding: 0;
+      }
+
+      .top-bar,
+      #loginOverlay,
+      .card-form,
+      .card-kpi,
+      .no-print,
+      .filter-box,
+      .col-acao {
+        display: none !important;
+      }
+
+      .container {
+        max-width: none;
+      }
+
+      .card {
+        box-shadow: none;
+
+        padding: 0;
+
+        margin: 0;
+      }
+
+      .header-logo {
+        min-height: 60px;
+      }
+
+      .header-logo img {
+        max-width: 200px;
+
+        max-height: 65px;
+      }
+
+      table {
+        min-width: 0;
+
+        width: 100%;
+
+        border:
+          1px solid #ccc;
+      }
+
+      th {
+        background: #eee !important;
+
+        color: #000;
+      }
+
+      .btn-status {
+        border: none;
+
+        background: transparent !important;
+
+        padding: 0;
+      }
+
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+
+<!-- ============================================================
+     LOGIN
+============================================================= -->
+
+<div id="loginOverlay">
+
+  <div class="login-card">
+
+    <img
+      src="nova_lik.jpg"
+      class="login-logo"
+      alt="Logotipo"
+      onerror="this.style.display='none'"
+    >
+
+    <h2>Acesso ao Sistema</h2>
+
+    <form
+      id="loginForm"
+      onsubmit="autenticarUsuario(event)"
+    >
+
+      <div class="login-group">
+
+        <label for="loginUsuario">
+          Usuário
+        </label>
+
+        <input
+          type="text"
+          id="loginUsuario"
+          placeholder="Digite seu usuário"
+          autocomplete="username"
+          required
+        >
+
+      </div>
+
+
+      <div class="login-group">
+
+        <label for="loginSenha">
+          Senha
+        </label>
+
+        <input
+          type="password"
+          id="loginSenha"
+          placeholder="Digite sua senha"
+          autocomplete="current-password"
+          required
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        class="btn-login"
+      >
+        🔐 Entrar
+      </button>
+
+
+      <p
+        id="loginError"
+        class="login-error"
+      >
+        ⚠️ Usuário ou senha incorretos!
+      </p>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     BARRA SUPERIOR
+============================================================= -->
+
+<div class="top-bar no-print">
+
+  <div class="user-info">
+
+    Usuário logado:
+
+    <strong id="currentUserDisplay">
+      --
+    </strong>
+
+    <span
+      id="serverStatus"
+      class="server-status"
+    >
+      🔄 Conectando...
+    </span>
+
+  </div>
+
+
+  <div class="top-actions">
+
+    <button
+      type="button"
+      id="btnAdminUsers"
+      onclick="togglePainelUsuarios()"
+      class="btn-users"
+      style="display:none;"
+    >
+      ⚙️ Usuários
+    </button>
+
+
+    <button
+      type="button"
+      onclick="carregarRegistrosDoServidor()"
+      class="btn-refresh"
+    >
+      🔄 Atualizar
+    </button>
+
+
+    <button
+      type="button"
+      onclick="logout()"
+      class="btn-logout"
+    >
+      🔒 Sair
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ============================================================
+     CONTEÚDO
+============================================================= -->
+
+<div class="container">
+
+
+  <!-- LOGO -->
+
+  <div class="header-logo">
+
+    <img
+      src="nova_lik.jpg"
+      alt="Logotipo da Empresa"
+      onerror="this.style.display='none'"
+    >
+
+  </div>
+
+
+  <!-- ==========================================================
+       USUÁRIOS
+  =========================================================== -->
+
+  <div
+    class="card no-print"
+    id="cardUsuarios"
+    style="display:none;"
+  >
+
+    <h2>
+      ⚙️ Gerenciamento de Usuários
+    </h2>
+
+
+    <form
+      id="userForm"
+      onsubmit="salvarUsuario(event)"
+    >
+
+      <div class="form-grid">
+
+        <div class="form-group">
+
+          <label for="novoNome">
+            Nome do Usuário
+          </label>
+
+          <input
+            type="text"
+            id="novoNome"
+            placeholder="Ex.: João Silva"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="novoUsuario">
+            Usuário / Login
+          </label>
+
+          <input
+            type="text"
+            id="novoUsuario"
+            placeholder="Ex.: joao"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="novaSenha">
+            Senha
+          </label>
+
+          <input
+            type="password"
+            id="novaSenha"
+            placeholder="Digite a senha"
+            required
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="btn-container">
+
+        <button
+          type="submit"
+          class="btn btn-add"
+        >
+          💾 Salvar Usuário
+        </button>
+
+      </div>
+
+    </form>
+
+
+    <div class="table-container">
+
+      <table class="user-table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Nome
+            </th>
+
+            <th>
+              Login
+            </th>
+
+            <th>
+              Ações
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="tabelaUsuariosBody">
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==========================================================
+       FORMULÁRIO
+  =========================================================== -->
+
+  <div class="card card-form">
+
+    <h2 id="formTitle">
+      Envio Mercadoria Garantia / Devolução
+    </h2>
+
+
+    <form id="garantiaForm">
+
+      <input
+        type="hidden"
+        id="editIndex"
+        value="-1"
+      >
+
+
+      <div class="form-grid">
+
+
+        <!-- MÊS -->
+
+        <div class="form-group">
+
+          <label for="mes">
+            Mês de Referência
+          </label>
+
+          <select
+            id="mes"
+            required
+          >
+
+            <option value="" disabled selected>
+              Selecione
+            </option>
+
+            <option>Janeiro</option>
+            <option>Fevereiro</option>
+            <option>Março</option>
+            <option>Abril</option>
+            <option>Maio</option>
+            <option>Junho</option>
+            <option>Julho</option>
+            <option>Agosto</option>
+            <option>Setembro</option>
+            <option>Outubro</option>
+            <option>Novembro</option>
+            <option>Dezembro</option>
+
+          </select>
+
+        </div>
+
+
+        <!-- NF GARANTIA -->
+
+        <div class="form-group">
+
+          <label for="numero_nota">
+            Nº da Nota Fiscal
+          </label>
+
+          <input
+            type="text"
+            id="numero_nota"
+            placeholder="Ex.: 000123"
+            required
+          >
+
+        </div>
+
+
+        <!-- FORNECEDOR -->
+
+        <div class="form-group">
+
+          <label for="fornecedor">
+            Fornecedor
+          </label>
+
+          <input
+            type="text"
+            id="fornecedor"
+            list="listaFornecedores"
+            autocomplete="off"
+            placeholder="Digite ou selecione..."
+            required
+          >
+
+          <datalist id="listaFornecedores">
+          </datalist>
+
+        </div>
+
+
+        <!-- DATA -->
+
+        <div class="form-group">
+
+          <label for="data_envio">
+            Data de Envio
+          </label>
+
+          <input
+            type="date"
+            id="data_envio"
+            required
+          >
+
+        </div>
+
+
+        <!-- VALOR -->
+
+        <div class="form-group">
+
+          <label for="valor">
+            Valor Total (R$)
+          </label>
+
+          <input
+            type="number"
+            id="valor"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            oninput="atualizarCamposPagamento()"
+            required
+          >
+
+        </div>
+
+
+        <!-- COLETA -->
+
+        <div class="form-group">
+
+          <label for="status_coleta">
+            Status Coleta
+          </label>
+
+          <select
+            id="status_coleta"
+            required
+          >
+
+            <option value="Não Coletado">
+              Não Coletado
+            </option>
+
+            <option value="Coletado">
+              Coletado
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- PAGAMENTO -->
+
+        <div class="form-group">
+
+          <label for="status_pagamento">
+            Status Pagamento
+          </label>
+
+          <select
+            id="status_pagamento"
+            onchange="atualizarCamposPagamento()"
+            required
+          >
+
+            <option value="Pendente">
+              Pendente
+            </option>
+
+            <option value="Pago Total">
+              Pago Total
+            </option>
+
+            <option value="Pago Parcial">
+              Pago Parcial
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- VALOR PAGO -->
+
+        <div class="form-group">
+
+          <label for="valor_pago">
+            Valor Pago (R$)
+          </label>
+
+          <input
+            type="number"
+            id="valor_pago"
+            step="0.01"
+            min="0"
+            value="0.00"
+            readonly
+            required
+          >
+
+        </div>
+
+
+        <!-- ======================================================
+             NOVO CAMPO
+             NF REFERENTE AO PAGAMENTO
+        ======================================================= -->
+
+        <div class="form-group">
+
+          <label for="nota_pagamento">
+            NF Referente ao Pagamento
+          </label>
+
+          <input
+            type="text"
+            id="nota_pagamento"
+            placeholder="Ex.: NF de pagamento / crédito"
+          >
+
+        </div>
+
+
+      </div>
+
+
+      <div class="btn-container">
+
+        <button
+          type="submit"
+          id="btnSubmit"
+          class="btn btn-add"
+        >
+          ➕ Adicionar ao Relatório
+        </button>
+
+
+        <button
+          type="button"
+          id="btnCancel"
+          onclick="cancelarEdicao()"
+          class="btn btn-cancel"
+        >
+          ❌ Cancelar Edição
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+
+  <!-- ==========================================================
+       KPIs
+  =========================================================== -->
+
+  <div class="card card-kpi no-print">
+
+    <h2>
+      📌 Resumo Geral
+    </h2>
+
+
+    <div class="kpi-grid">
+
+
+      <div class="kpi-card kpi-total">
+
+        <span class="kpi-title">
+          Total Cadastrado
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiTotalValor"
+        >
+          R$ 0,00
+        </span>
+
+        <span
+          class="kpi-sub"
+          id="kpiTotalQtd"
+        >
+          0 registros
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-pago">
+
+        <span class="kpi-title">
+          Total Recebido / Pago
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiTotalPago"
+        >
+          R$ 0,00
+        </span>
+
+        <span class="kpi-sub">
+          Garantias liquidadas
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-saldo">
+
+        <span class="kpi-title">
+          Saldo Pendente
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiTotalSaldo"
+        >
+          R$ 0,00
+        </span>
+
+        <span class="kpi-sub">
+          A receber / cobrar
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-coletado">
+
+        <span class="kpi-title">
+          Coletados
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiColetadoValor"
+        >
+          R$ 0,00
+        </span>
+
+        <span
+          class="kpi-sub"
+          id="kpiColetadoQtd"
+        >
+          0 itens
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-nao-coletado">
+
+        <span class="kpi-title">
+          Pendente Coleta
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiNaoColetadoValor"
+        >
+          R$ 0,00
+        </span>
+
+        <span
+          class="kpi-sub"
+          id="kpiNaoColetadoQtd"
+        >
+          0 itens
+        </span>
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+
+  <!-- ==========================================================
+       REGISTROS
+  =========================================================== -->
+
+  <div class="card">
+
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+      "
+    >
+
+      <h2 style="margin-bottom:0;">
+        Registro de Garantias
+      </h2>
+
+
+      <div class="btn-container no-print" style="margin-top:0;">
+
+        <button
+          type="button"
+          onclick="exportarExcel()"
+          class="btn btn-excel"
+        >
+          📊 Excel
+        </button>
+
+
+        <button
+          type="button"
+          onclick="exportarPDF()"
+          class="btn btn-pdf"
+        >
+          🖨️ Imprimir PDF
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ========================================================
+         FILTROS
+    ========================================================= -->
+
+    <div class="filter-box no-print">
+
+
+      <div class="filter-group">
+
+        <label for="filtroMes">
+          📅 <strong>Mês:</strong>
+        </label>
+
+        <select
+          id="filtroMes"
+          onchange="filtrarTabela()"
+        >
+
+          <option value="">
+            Todos
+          </option>
+
+          <option>Janeiro</option>
+          <option>Fevereiro</option>
+          <option>Março</option>
+          <option>Abril</option>
+          <option>Maio</option>
+          <option>Junho</option>
+          <option>Julho</option>
+          <option>Agosto</option>
+          <option>Setembro</option>
+          <option>Outubro</option>
+          <option>Novembro</option>
+          <option>Dezembro</option>
+
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="filtroStatus">
+          📌 <strong>Coleta:</strong>
+        </label>
+
+        <select
+          id="filtroStatus"
+          onchange="filtrarTabela()"
+        >
+
+          <option value="">
+            Todos
+          </option>
+
+          <option value="Coletado">
+            Coletado
+          </option>
+
+          <option value="Não Coletado">
+            Não Coletado
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="filtroPagamento">
+          💰 <strong>Pagamento:</strong>
+        </label>
+
+        <select
+          id="filtroPagamento"
+          onchange="filtrarTabela()"
+        >
+
+          <option value="">
+            Todos
+          </option>
+
+          <option value="Pendente">
+            Pendente
+          </option>
+
+          <option value="Pago Total">
+            Pago Total
+          </option>
+
+          <option value="Pago Parcial">
+            Pago Parcial
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        class="filter-group"
+        style="flex:1;"
+      >
+
+        <label for="filtroGeral">
+          🔍 <strong>Buscar:</strong>
+        </label>
+
+        <input
+          type="text"
+          id="filtroGeral"
+          oninput="filtrarTabela()"
+          placeholder="Fornecedor, NF garantia ou NF pagamento..."
+          style="width:100%;"
+        >
+
+      </div>
+
+
+    </div>
+
+
+    <!-- ========================================================
+         TABELA
+    ========================================================= -->
+
+    <div class="table-container">
+
+      <table id="tabelaGarantia">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Mês
+            </th>
+
+            <th>
+              Nº NF
+            </th>
+
+            <th>
+              Fornecedor
+            </th>
+
+            <th>
+              Data Envio
+            </th>
+
+            <th>
+              Valor Total
+            </th>
+
+            <th>
+              Pagamento
+            </th>
+
+            <th>
+              NF Pagamento
+            </th>
+
+            <th>
+              Saldo
+            </th>
+
+            <th>
+              Coleta
+            </th>
+
+            <th class="col-acao no-print">
+              Ações
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =============================================================
+   CONFIGURAÇÃO SUPABASE
+============================================================= */
+
+const SUPABASE_URL =
+  'https://tgkdfxnbhczbvzhzdjkn.supabase.co';
+
+const SUPABASE_KEY =
+  'sb_publishable_vmEfsC1EJp-jBZBX3nCKvg_jXnjx-CZ';
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+/* =============================================================
+   TABELAS
+============================================================= */
+
+const TABELA_REGISTROS =
+  'registros_garantia';
+
+const TABELA_USUARIOS =
+  'usuarios_sistema';
+
+
+/* =============================================================
+   VARIÁVEIS
+============================================================= */
+
+let registros = [];
+
+let usuarios = [];
+
+
+/* =============================================================
+   UTILITÁRIOS
+============================================================= */
+
+function dinheiro(valor) {
+
+  return Number(valor || 0).toLocaleString(
+    'pt-BR',
+    {
+      style: 'currency',
+      currency: 'BRL'
+    }
+  );
+
+}
+
+
+function escaparHTML(texto) {
+
+  return String(texto ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+}
+
+
+function dataBRParaISO(dataBR) {
+
+  if (!dataBR) return null;
+
+  const partes =
+    dataBR.split('/');
+
+  if (partes.length !== 3) {
+    return null;
+  }
+
+  return `${partes[2]}-${partes[1]}-${partes[0]}`;
+
+}
+
+
+function dataISOParaBR(dataISO) {
+
+  if (!dataISO) return '';
+
+  const valor =
+    String(dataISO).substring(0,10);
+
+  const partes =
+    valor.split('-');
+
+  if (partes.length !== 3) {
+    return valor;
+  }
+
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+}
+
+
+function converterDataParaOrdenacao(data) {
+
+  if (!data) {
+    return new Date(0);
+  }
+
+  if (data.includes('/')) {
+
+    const partes =
+      data.split('/');
+
+    return new Date(
+      Number(partes[2]),
+      Number(partes[1]) - 1,
+      Number(partes[0])
+    );
+
+  }
+
+  return new Date(data);
+
+}
+
+
+/* =============================================================
+   STATUS DO SERVIDOR
+============================================================= */
+
+function atualizarStatusServidor(online, mensagem='') {
+
+  const elemento =
+    document.getElementById('serverStatus');
+
+  if (!elemento) return;
+
+  if (online) {
+
+    elemento.className =
+      'server-status server-online';
+
+    elemento.innerText =
+      '🟢 Servidor conectado';
+
+  } else {
+
+    elemento.className =
+      'server-status server-offline';
+
+    elemento.innerText =
+      '🔴 Servidor indisponível';
+
+  }
+
+  if (mensagem) {
+    elemento.title = mensagem;
+  }
+
+}
+
+
+/* =============================================================
+   LOGIN
+============================================================= */
+
+function verificarAutenticacao() {
+
+  const logado =
+    sessionStorage.getItem(
+      'usuarioLogado'
+    );
+
+  const login =
+    sessionStorage.getItem(
+      'loginUsuarioAtual'
+    );
+
+  const nome =
+    sessionStorage.getItem(
+      'nomeUsuarioAtual'
+    );
+
+
+  if (logado === 'true' && login) {
+
+    document.getElementById(
+      'loginOverlay'
+    ).style.display = 'none';
+
+
+    document.getElementById(
+      'currentUserDisplay'
+    ).innerText =
+      `${nome} (${login})`;
+
+
+    if (login.toLowerCase() === 'admin') {
+
+      document.getElementById(
+        'btnAdminUsers'
+      ).style.display = 'inline-block';
+
+    } else {
+
+      document.getElementById(
+        'btnAdminUsers'
+      ).style.display = 'none';
+
+      document.getElementById(
+        'cardUsuarios'
+      ).style.display = 'none';
+
+    }
+
+    return true;
+
+  }
+
+
+  document.getElementById(
+    'loginOverlay'
+  ).style.display = 'flex';
+
+
+  return false;
+
+}
+
+
+/* =============================================================
+   AUTENTICAR
+============================================================= */
+
+async function autenticarUsuario(event) {
+
+  event.preventDefault();
+
+
+  const usuario =
+    document.getElementById(
+      'loginUsuario'
+    ).value.trim().toLowerCase();
+
+
+  const senha =
+    document.getElementById(
+      'loginSenha'
+    ).value.trim();
+
+
+  const erro =
+    document.getElementById(
+      'loginError'
+    );
+
+
+  erro.style.display = 'none';
+
+
+  try {
+
+    const { data, error } =
+      await supabaseClient
+        .from(TABELA_USUARIOS)
+        .select('*')
+        .eq('usuario', usuario)
+        .eq('senha', senha)
+        .maybeSingle();
+
+
+    if (error) {
+
+      console.error(error);
+
+      erro.innerText =
+        '⚠️ Erro ao consultar o servidor. Verifique a configuração do Supabase.';
+
+      erro.style.display = 'block';
+
+      atualizarStatusServidor(
+        false,
+        error.message
+      );
+
+      return;
+
+    }
+
+
+    if (!data) {
+
+      erro.innerText =
+        '⚠️ Usuário ou senha incorretos!';
+
+      erro.style.display = 'block';
+
+      return;
+
+    }
+
+
+    sessionStorage.setItem(
+      'usuarioLogado',
+      'true'
+    );
+
+    sessionStorage.setItem(
+      'loginUsuarioAtual',
+      data.usuario
+    );
+
+    sessionStorage.setItem(
+      'nomeUsuarioAtual',
+      data.nome
+    );
+
+
+    verificarAutenticacao();
+
+    document.getElementById(
+      'loginForm'
+    ).reset();
+
+
+    await carregarTudo();
+
+  } catch (erroCatch) {
+
+    console.error(erroCatch);
+
+    erro.innerText =
+      '⚠️ Não foi possível conectar ao servidor.';
+
+    erro.style.display = 'block';
+
+    atualizarStatusServidor(
+      false,
+      erroCatch.message
+    );
+
+  }
+
+}
+
+
+/* =============================================================
+   LOGOUT
+============================================================= */
+
+function logout() {
+
+  sessionStorage.clear();
+
+  document.getElementById(
+    'loginUsuario'
+  ).value = '';
+
+  document.getElementById(
+    'loginSenha'
+  ).value = '';
+
+  verificarAutenticacao();
+
+}
+
+
+/* =============================================================
+   CARREGAR TUDO
+============================================================= */
+
+async function carregarTudo() {
+
+  await carregarRegistrosDoServidor();
+
+  await carregarUsuariosDoServidor();
+
+  atualizarDatalistFornecedores();
+
+  atualizarCardsResumo();
+
+}
+
+
+/* =============================================================
+   REGISTROS - SUPABASE
+============================================================= */
+
+async function carregarRegistrosDoServidor() {
+
+  try {
+
+    const { data, error } =
+      await supabaseClient
+        .from(TABELA_REGISTROS)
+        .select('*');
+
+
+    if (error) {
+
+      console.error(error);
+
+      atualizarStatusServidor(
+        false,
+        error.message
+      );
+
+      alert(
+        '⚠️ Não foi possível carregar os registros.\n\n' +
+        error.message
+      );
+
+      return;
+
+    }
+
+
+    registros =
+      Array.isArray(data)
+        ? data.map(normalizarRegistro)
+        : [];
+
+
+    atualizarStatusServidor(true);
+
+    renderizarTabela();
+
+    atualizarDatalistFornecedores();
+
+    atualizarCardsResumo();
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    atualizarStatusServidor(
+      false,
+      erro.message
+    );
+
+  }
+
+}
+
+
+/* =============================================================
+   NORMALIZAR REGISTRO
+============================================================= */
+
+function normalizarRegistro(r) {
+
+  return {
+
+    id: r.id,
+
+    mes:
+      r.mes || '',
+
+    numeroNota:
+      r.numero_nota ??
+      r.numeroNota ??
+      '',
+
+    fornecedor:
+      r.fornecedor || '',
+
+    dataEnvio:
+      r.data_envio
+        ? dataISOParaBR(r.data_envio)
+        : (
+          r.dataEnvio || ''
+        ),
+
+    valor:
+      Number(
+        r.valor ?? 0
+      ),
+
+    status:
+      r.status_coleta ??
+      r.status ??
+      'Não Coletado',
+
+    statusPagamento:
+      r.status_pagamento ??
+      r.statusPagamento ??
+      'Pendente',
+
+    valorPago:
+      Number(
+        r.valor_pago ??
+        r.valorPago ??
+        0
+      ),
+
+    notaPagamento:
+      r.nota_pagamento ??
+      r.notaPagamento ??
+      ''
+
+  };
+
+}
+
+
+/* =============================================================
+   SALVAR REGISTRO
+============================================================= */
+
+async function salvarRegistroServidor(registro) {
+
+  const dados = {
+
+    mes:
+      registro.mes,
+
+    numero_nota:
+      registro.numeroNota,
+
+    fornecedor:
+      registro.fornecedor,
+
+    data_envio:
+      dataBRParaISO(
+        registro.dataEnvio
+      ),
+
+    valor:
+      Number(registro.valor || 0),
+
+    status_coleta:
+      registro.status,
+
+    status_pagamento:
+      registro.statusPagamento,
+
+    valor_pago:
+      Number(registro.valorPago || 0),
+
+    nota_pagamento:
+      registro.notaPagamento || ''
+
+  };
+
+
+  const { data, error } =
+    await supabaseClient
+      .from(TABELA_REGISTROS)
+      .insert(dados)
+      .select()
+      .single();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return normalizarRegistro(data);
+
+}
+
+
+/* =============================================================
+   ATUALIZAR REGISTRO
+============================================================= */
+
+async function atualizarRegistroServidor(
+  id,
+  registro
+) {
+
+  const dados = {
+
+    mes:
+      registro.mes,
+
+    numero_nota:
+      registro.numeroNota,
+
+    fornecedor:
+      registro.fornecedor,
+
+    data_envio:
+      dataBRParaISO(
+        registro.dataEnvio
+      ),
+
+    valor:
+      Number(registro.valor || 0),
+
+    status_coleta:
+      registro.status,
+
+    status_pagamento:
+      registro.statusPagamento,
+
+    valor_pago:
+      Number(registro.valorPago || 0),
+
+    nota_pagamento:
+      registro.notaPagamento || ''
+
+  };
+
+
+  const { data, error } =
+    await supabaseClient
+      .from(TABELA_REGISTROS)
+      .update(dados)
+      .eq('id', id)
+      .select()
+      .single();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return normalizarRegistro(data);
+
+}
+
+
+/* =============================================================
+   EXCLUIR REGISTRO
+============================================================= */
+
+async function excluirRegistro(id) {
+
+  const registro =
+    registros.find(
+      r => r.id === id
+    );
+
+
+  if (!registro) return;
+
+
+  const confirmar =
+    confirm(
+      '⚠️ ATENÇÃO!\n\n' +
+      'Tem certeza que deseja excluir este registro?\n\n' +
+      `Fornecedor: ${registro.fornecedor}\n` +
+      `NF: ${registro.numeroNota}\n` +
+      `Data: ${registro.dataEnvio}\n\n` +
+      'Esta operação não poderá ser desfeita.'
+    );
+
+
+  if (!confirmar) {
+    return;
+  }
+
+
+  try {
+
+    const { error } =
+      await supabaseClient
+        .from(TABELA_REGISTROS)
+        .delete()
+        .eq('id', id);
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    registros =
+      registros.filter(
+        r => r.id !== id
+      );
+
+
+    renderizarTabela();
+
+    atualizarCardsResumo();
+
+    atualizarDatalistFornecedores();
+
+    alert(
+      '✅ Registro excluído com sucesso!'
+    );
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      '❌ Erro ao excluir registro:\n\n' +
+      erro.message
+    );
+
+  }
+
+}
+
+
+/* =============================================================
+   FORMULÁRIO DE GARANTIA
+============================================================= */
+
+document
+  .getElementById('garantiaForm')
+  .addEventListener(
+    'submit',
+    async function(event) {
+
+      event.preventDefault();
+
+
+      const editIndex =
+        document.getElementById(
+          'editIndex'
+        ).value;
+
+
+      const mes =
+        document.getElementById(
+          'mes'
+        ).value;
+
+
+      const numeroNota =
+        document.getElementById(
+          'numero_nota'
+        ).value.trim();
+
+
+      const fornecedor =
+        document.getElementById(
+          'fornecedor'
+        ).value.trim();
+
+
+      const dataRaw =
+        document.getElementById(
+          'data_envio'
+        ).value;
+
+
+      const valor =
+        Math.max(
+          0,
+          parseFloat(
+            document.getElementById(
+              'valor'
+            ).value
+          ) || 0
+        );
+
+
+      const status =
+        document.getElementById(
+          'status_coleta'
+        ).value;
+
+
+      const statusPagamento =
+        document.getElementById(
+          'status_pagamento'
+        ).value;
+
+
+      let valorPago =
+        Math.max(
+          0,
+          parseFloat(
+            document.getElementById(
+              'valor_pago'
+            ).value
+          ) || 0
+        );
+
+
+      const notaPagamento =
+        document.getElementById(
+          'nota_pagamento'
+        ).value.trim();
+
+
+      if (!dataRaw) {
+
+        alert(
+          '⚠️ Informe a data de envio.'
+        );
+
+        return;
+
+      }
+
+
+      if (
+        statusPagamento === 'Pendente'
+      ) {
+
+        valorPago = 0;
+
+      }
+
+
+      if (
+        statusPagamento === 'Pago Total'
+      ) {
+
+        valorPago = valor;
+
+      }
+
+
+      if (
+        statusPagamento === 'Pago Parcial' &&
+        valorPago >= valor
+      ) {
+
+        alert(
+          '⚠️ Para "Pago Parcial", o valor pago deve ser menor que o valor total.'
+        );
+
+        return;
+
+      }
+
+
+      if (valorPago > valor) {
+
+        alert(
+          '⚠️ O valor pago não pode ser maior que o valor total.'
+        );
+
+        return;
+
+      }
+
+
+      const partes =
+        dataRaw.split('-');
+
+
+      const dataFormatada =
+        `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+
+      const registro = {
+
+        mes,
+
+        numeroNota,
+
+        fornecedor,
+
+        dataEnvio:
+          dataFormatada,
+
+        valor,
+
+        status,
+
+        statusPagamento,
+
+        valorPago,
+
+        notaPagamento
+
+      };
+
+
+      const botao =
+        document.getElementById(
+          'btnSubmit'
+        );
+
+
+      botao.disabled = true;
+
+      botao.innerText =
+        '⏳ Salvando...';
+
+
+      try {
+
+
+        if (
+          editIndex === '-1'
+        ) {
+
+          const novo =
+            await salvarRegistroServidor(
+              registro
+            );
+
+
+          registros.push(novo);
+
+
+          alert(
+            '✅ Registro cadastrado com sucesso!'
+          );
+
+
+        } else {
+
+          const id =
+            Number(editIndex);
+
+
+          const atualizado =
+            await atualizarRegistroServidor(
+              id,
+              registro
+            );
+
+
+          const posicao =
+            registros.findIndex(
+              r => r.id === id
+            );
+
+
+          if (posicao !== -1) {
+
+            registros[posicao] =
+              atualizado;
+
+          }
+
+
+          alert(
+            '✅ Registro atualizado com sucesso!'
+          );
+
+        }
+
+
+        cancelarEdicao();
+
+        renderizarTabela();
+
+        atualizarCardsResumo();
+
+        atualizarDatalistFornecedores();
+
+
+      } catch (erro) {
+
+        console.error(erro);
+
+        alert(
+          '❌ Não foi possível salvar o registro.\n\n' +
+          erro.message
+        );
+
+      } finally {
+
+        botao.disabled = false;
+
+        if (
+          document.getElementById(
+            'editIndex'
+          ).value === '-1'
+        ) {
+
+          botao.innerText =
+            '➕ Adicionar ao Relatório';
+
+        }
+
+      }
+
+    }
+  );
+
+
+/* =============================================================
+   PAGAMENTO
+============================================================= */
+
+function atualizarCamposPagamento() {
+
+  const valor =
+    Math.max(
+      0,
+      parseFloat(
+        document.getElementById(
+          'valor'
+        ).value
+      ) || 0
+    );
+
+
+  const status =
+    document.getElementById(
+      'status_pagamento'
+    ).value;
+
+
+  const campo =
+    document.getElementById(
+      'valor_pago'
+    );
+
+
+  if (
+    status === 'Pago Total'
+  ) {
+
+    campo.value =
+      valor.toFixed(2);
+
+    campo.readOnly = true;
+
+  }
+
+
+  else if (
+    status === 'Pendente'
+  ) {
+
+    campo.value =
+      '0.00';
+
+    campo.readOnly = true;
+
+  }
+
+
+  else {
+
+    campo.readOnly = false;
+
+    const atual =
+      parseFloat(
+        campo.value
+      ) || 0;
+
+
+    if (
+      atual <= 0 ||
+      atual >= valor
+    ) {
+
+      campo.value =
+        valor > 0
+          ? (valor / 2).toFixed(2)
+          : '0.00';
+
+    }
+
+  }
+
+}
+
+
+/* =============================================================
+   ORDENAÇÃO + FILTROS
+============================================================= */
+
+function obterRegistrosFiltrados() {
+
+  const filtroMes =
+    document.getElementById(
+      'filtroMes'
+    ).value;
+
+
+  const filtroStatus =
+    document.getElementById(
+      'filtroStatus'
+    ).value;
+
+
+  const filtroPagamento =
+    document.getElementById(
+      'filtroPagamento'
+    ).value;
+
+
+  const filtroGeral =
+    document.getElementById(
+      'filtroGeral'
+    ).value
+    .toLowerCase()
+    .trim();
+
+
+  return registros
+
+    .filter(r => {
+
+      const matchMes =
+        !filtroMes ||
+        r.mes === filtroMes;
+
+
+      const matchStatus =
+        !filtroStatus ||
+        r.status === filtroStatus;
+
+
+      const matchPagamento =
+        !filtroPagamento ||
+        r.statusPagamento === filtroPagamento;
+
+
+      const fornecedor =
+        (
+          r.fornecedor || ''
+        )
+        .toLowerCase();
+
+
+      const numeroNota =
+        (
+          r.numeroNota || ''
+        )
+        .toLowerCase();
+
+
+      const notaPagamento =
+        (
+          r.notaPagamento || ''
+        )
+        .toLowerCase();
+
+
+      const matchGeral =
+        !filtroGeral ||
+        fornecedor.includes(
+          filtroGeral
+        ) ||
+        numeroNota.includes(
+          filtroGeral
+        ) ||
+        notaPagamento.includes(
+          filtroGeral
+        );
+
+
+      return (
+        matchMes &&
+        matchStatus &&
+        matchPagamento &&
+        matchGeral
+      );
+
+    })
+
+
+    /* ========================================================
+       ORDEM CRESCENTE DE DATA
+       MAIS ANTIGO → MAIS RECENTE
+    ========================================================= */
+
+    .sort(
+      (a, b) => {
+
+        return (
+          converterDataParaOrdenacao(
+            a.dataEnvio
+          ) -
+          converterDataParaOrdenacao(
+            b.dataEnvio
+          )
+        );
+
+      }
+    );
+
+}
+
+
+/* =============================================================
+   RENDERIZAR TABELA
+============================================================= */
+
+function renderizarTabela() {
+
+  filtrarTabela();
+
+}
+
+
+/* =============================================================
+   FILTRAR TABELA
+============================================================= */
+
+function filtrarTabela() {
+
+  const tbody =
+    document.querySelector(
+      '#tabelaGarantia tbody'
+    );
+
+
+  tbody.innerHTML = '';
+
+
+  const filtrados =
+    obterRegistrosFiltrados();
+
+
+  if (
+    filtrados.length === 0
+  ) {
+
+    tbody.innerHTML = `
+      <tr>
+        <td
+          colspan="10"
+          style="
+            text-align:center;
+            padding:25px;
+            color:#718096;
+          "
+        >
+          Nenhum registro encontrado.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  filtrados.forEach(r => {
+
+    const tr =
+      document.createElement('tr');
+
+
+    const valorTotal =
+      Number(r.valor || 0);
+
+
+    const valorPago =
+      Number(r.valorPago || 0);
+
+
+    const saldo =
+      valorTotal - valorPago;
+
+
+    let badge =
+      'badge-pendente';
+
+
+    if (
+      r.statusPagamento ===
+      'Pago Total'
+    ) {
+
+      badge =
+        'badge-pago';
+
+    }
+
+
+    if (
+      r.statusPagamento ===
+      'Pago Parcial'
+    ) {
+
+      badge =
+        'badge-parcial';
+
+    }
+
+
+    const coletado =
+      r.status === 'Coletado';
+
+
+    tr.innerHTML = `
+
+      <td>
+        ${escaparHTML(r.mes)}
+      </td>
+
+
+      <td>
+        <strong>
+          ${escaparHTML(r.numeroNota)}
+        </strong>
+      </td>
+
+
+      <td>
+        ${escaparHTML(r.fornecedor)}
+      </td>
+
+
+      <td>
+        ${escaparHTML(r.dataEnvio)}
+      </td>
+
+
+      <td>
+        <strong>
+          ${dinheiro(valorTotal)}
+        </strong>
+      </td>
+
+
+      <td>
+
+        ${dinheiro(valorPago)}
+
+        <br>
+
+        <span class="${badge}">
+          ${escaparHTML(
+            r.statusPagamento ||
+            'Pendente'
+          )}
+        </span>
+
+      </td>
+
+
+      <td>
+
+        ${
+          r.notaPagamento
+            ? escaparHTML(
+                r.notaPagamento
+              )
+            : '<span style="color:#a0aec0;">Não informado</span>'
+        }
+
+      </td>
+
+
+      <td>
+
+        <span
+          class="${
+            saldo > 0
+              ? 'saldo-text'
+              : ''
+          }"
+        >
+          ${dinheiro(saldo)}
+        </span>
+
+      </td>
+
+
+      <td>
+
+        <button
+          type="button"
+          class="btn-status ${
+            coletado
+              ? 'status-coletado'
+              : 'status-nao-coletado'
+          }"
+          onclick="alternarStatus(${r.id})"
+        >
+
+          ${
+            coletado
+              ? '✓ Coletado'
+              : '⏳ Não Coletado'
+          }
+
+        </button>
+
+      </td>
+
+
+      <td class="col-acao no-print">
+
+        <div class="acoes">
+
+          <button
+            type="button"
+            class="btn-action btn-edit"
+            onclick="prepararEdicao(${r.id})"
+            title="Editar"
+          >
+            ✏️ Editar
+          </button>
+
+
+          <button
+            type="button"
+            class="btn-action btn-delete"
+            onclick="excluirRegistro(${r.id})"
+            title="Excluir"
+          >
+            🗑️ Excluir
+          </button>
+
+        </div>
+
+      </td>
+
+    `;
+
+
+    tbody.appendChild(tr);
+
+  });
+
+}
+
+
+/* =============================================================
+   ALTERAR STATUS COM CONFIRMAÇÃO
+============================================================= */
+
+async function alternarStatus(id) {
+
+  const registro =
+    registros.find(
+      r => r.id === id
+    );
+
+
+  if (!registro) return;
+
+
+  const statusAtual =
+    registro.status;
+
+
+  const novoStatus =
+    statusAtual === 'Coletado'
+      ? 'Não Coletado'
+      : 'Coletado';
+
+
+  const confirmar =
+    confirm(
+
+      '⚠️ CONFIRMAÇÃO DE ALTERAÇÃO\n\n' +
+
+      `Fornecedor: ${registro.fornecedor}\n` +
+
+      `NF: ${registro.numeroNota}\n\n` +
+
+      `Status atual: ${statusAtual}\n` +
+
+      `Novo status: ${novoStatus}\n\n` +
+
+      'Deseja realmente alterar o status?'
+
+    );
+
+
+  if (!confirmar) {
+
+    return;
+
+  }
+
+
+  try {
+
+    const atualizado = {
+
+      ...registro,
+
+      status:
+        novoStatus
+
+    };
+
+
+    const resultado =
+      await atualizarRegistroServidor(
+        id,
+        atualizado
+      );
+
+
+    const posicao =
+      registros.findIndex(
+        r => r.id === id
+      );
+
+
+    if (posicao !== -1) {
+
+      registros[posicao] =
+        resultado;
+
+    }
+
+
+    filtrarTabela();
+
+    atualizarCardsResumo();
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      '❌ Não foi possível alterar o status.\n\n' +
+      erro.message
+    );
+
+  }
+
+}
+
+
+/* =============================================================
+   EDITAR
+============================================================= */
+
+function prepararEdicao(id) {
+
+  const registro =
+    registros.find(
+      r => r.id === id
+    );
+
+
+  if (!registro) return;
+
+
+  document.getElementById(
+    'editIndex'
+  ).value = id;
+
+
+  document.getElementById(
+    'mes'
+  ).value =
+    registro.mes;
+
+
+  document.getElementById(
+    'numero_nota'
+  ).value =
+    registro.numeroNota;
+
+
+  document.getElementById(
+    'fornecedor'
+  ).value =
+    registro.fornecedor;
+
+
+  document.getElementById(
+    'data_envio'
+  ).value =
+    dataBRParaISO(
+      registro.dataEnvio
+    );
+
+
+  document.getElementById(
+    'valor'
+  ).value =
+    registro.valor;
+
+
+  document.getElementById(
+    'status_coleta'
+  ).value =
+    registro.status;
+
+
+  document.getElementById(
+    'status_pagamento'
+  ).value =
+    registro.statusPagamento ||
+    'Pendente';
+
+
+  document.getElementById(
+    'valor_pago'
+  ).value =
+    registro.valorPago || 0;
+
+
+  document.getElementById(
+    'nota_pagamento'
+  ).value =
+    registro.notaPagamento || '';
+
+
+  atualizarCamposPagamento();
+
+
+  document.getElementById(
+    'formTitle'
+  ).innerText =
+    'Editar Registro de Garantia';
+
+
+  document.getElementById(
+    'btnSubmit'
+  ).innerText =
+    '💾 Salvar Alterações';
+
+
+  document.getElementById(
+    'btnCancel'
+  ).style.display =
+    'inline-flex';
+
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+
+}
+
+
+/* =============================================================
+   CANCELAR EDIÇÃO
+============================================================= */
+
+function cancelarEdicao() {
+
+  document.getElementById(
+    'editIndex'
+  ).value = '-1';
+
+
+  document.getElementById(
+    'garantiaForm'
+  ).reset();
+
+
+  document.getElementById(
+    'status_coleta'
+  ).value =
+    'Não Coletado';
+
+
+  document.getElementById(
+    'status_pagamento'
+  ).value =
+    'Pendente';
+
+
+  document.getElementById(
+    'formTitle'
+  ).innerText =
+    'Envio Mercadoria Garantia / Devolução';
+
+
+  document.getElementById(
+    'btnSubmit'
+  ).innerText =
+    '➕ Adicionar ao Relatório';
+
+
+  document.getElementById(
+    'btnCancel'
+  ).style.display =
+    'none';
+
+
+  atualizarCamposPagamento();
+
+}
+
+
+/* =============================================================
+   DATLIST FORNECEDORES
+============================================================= */
+
+function atualizarDatalistFornecedores() {
+
+  const datalist =
+    document.getElementById(
+      'listaFornecedores'
+    );
+
+
+  datalist.innerHTML = '';
+
+
+  const fornecedores =
+    [
+      ...new Set(
+        registros
+          .map(r => r.fornecedor)
+          .filter(Boolean)
+      )
+    ]
+    .sort(
+      (a,b) =>
+        a.localeCompare(
+          b,
+          'pt-BR'
+        )
+    );
+
+
+  fornecedores.forEach(
+    fornecedor => {
+
+      const option =
+        document.createElement(
+          'option'
+        );
+
+
+      option.value =
+        fornecedor;
+
+
+      datalist.appendChild(
+        option
+      );
+
+    }
+  );
+
+}
+
+
+/* =============================================================
+   KPIs
+============================================================= */
+
+function atualizarCardsResumo() {
+
+  const totalRegistros =
+    registros.length;
+
+
+  const totalValor =
+    registros.reduce(
+      (total, r) =>
+        total +
+        Number(r.valor || 0),
+      0
+    );
+
+
+  const totalPago =
+    registros.reduce(
+      (total, r) =>
+        total +
+        Number(r.valorPago || 0),
+      0
+    );
+
+
+  const saldo =
+    totalValor -
+    totalPago;
+
+
+  const coletados =
+    registros.filter(
+      r =>
+        r.status ===
+        'Coletado'
+    );
+
+
+  const naoColetados =
+    registros.filter(
+      r =>
+        r.status ===
+        'Não Coletado'
+    );
+
+
+  const valorColetado =
+    coletados.reduce(
+      (total, r) =>
+        total +
+        Number(r.valor || 0),
+      0
+    );
+
+
+  const valorNaoColetado =
+    naoColetados.reduce(
+      (total, r) =>
+        total +
+        Number(r.valor || 0),
+      0
+    );
+
+
+  document.getElementById(
+    'kpiTotalValor'
+  ).innerText =
+    dinheiro(totalValor);
+
+
+  document.getElementById(
+    'kpiTotalQtd'
+  ).innerText =
+    `${totalRegistros} registro${
+      totalRegistros !== 1
+        ? 's'
+        : ''
+    }`;
+
+
+  document.getElementById(
+    'kpiTotalPago'
+  ).innerText =
+    dinheiro(totalPago);
+
+
+  document.getElementById(
+    'kpiTotalSaldo'
+  ).innerText =
+    dinheiro(saldo);
+
+
+  document.getElementById(
+    'kpiColetadoValor'
+  ).innerText =
+    dinheiro(valorColetado);
+
+
+  document.getElementById(
+    'kpiColetadoQtd'
+  ).innerText =
+    `${coletados.length} item${
+      coletados.length !== 1
+        ? 'ns'
+        : ''
+    }`;
+
+
+  document.getElementById(
+    'kpiNaoColetadoValor'
+  ).innerText =
+    dinheiro(valorNaoColetado);
+
+
+  document.getElementById(
+    'kpiNaoColetadoQtd'
+  ).innerText =
+    `${naoColetados.length} item${
+      naoColetados.length !== 1
+        ? 'ns'
+        : ''
+    }`;
+
+}
+
+
+/* =============================================================
+   EXPORTAR EXCEL
+============================================================= */
+
+function exportarExcel() {
+
+  const dados =
+    obterRegistrosFiltrados();
+
+
+  if (!dados.length) {
+
+    alert(
+      '⚠️ Não existem registros para exportar.'
+    );
+
+    return;
+
+  }
+
+
+  const dadosFormatados =
+    dados.map(r => {
+
+      const total =
+        Number(r.valor || 0);
+
+      const pago =
+        Number(r.valorPago || 0);
+
+
+      return {
+
+        'Mês':
+          r.mes,
+
+        'Nº Nota Fiscal':
+          r.numeroNota,
+
+        'Fornecedor':
+          r.fornecedor,
+
+        'Data Envio':
+          r.dataEnvio,
+
+        'Valor Total (R$)':
+          total,
+
+        'Status Pagamento':
+          r.statusPagamento,
+
+        'Valor Pago (R$)':
+          pago,
+
+        'NF Referente ao Pagamento':
+          r.notaPagamento || '',
+
+        'Saldo Pendente (R$)':
+          total - pago,
+
+        'Status Coleta':
+          r.status
+
+      };
+
+    });
+
+
+  const worksheet =
+    XLSX.utils.json_to_sheet(
+      dadosFormatados
+    );
+
+
+  const workbook =
+    XLSX.utils.book_new();
+
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    'Garantias'
+  );
+
+
+  XLSX.writeFile(
+    workbook,
+    'relatorio_garantias.xlsx'
+  );
+
+}
+
+
+/* =============================================================
+   PDF / IMPRESSÃO
+============================================================= */
+
+function exportarPDF() {
+
+  const dados =
+    obterRegistrosFiltrados();
+
+
+  if (!dados.length) {
+
+    alert(
+      '⚠️ Não existem registros para imprimir.'
+    );
+
+    return;
+
+  }
+
+
+  const {
+    jsPDF
+  } = window.jspdf;
+
+
+  const doc =
+    new jsPDF(
+      'landscape'
+    );
+
+
+  doc.setFontSize(16);
+
+  doc.setFont(
+    'helvetica',
+    'bold'
+  );
+
+
+  doc.text(
+    'Relatório de Controle de Garantia e Devolução',
+    14,
+    15
+  );
+
+
+  doc.setFontSize(9);
+
+  doc.setFont(
+    'helvetica',
+    'normal'
+  );
+
+
+  doc.text(
+    'Registros organizados por data crescente',
+    14,
+    21
+  );
+
+
+  doc.text(
+    `Emitido em: ${new Date().toLocaleString('pt-BR')}`,
+    14,
+    26
+  );
+
+
+  const colunas = [
+
+    'Mês',
+
+    'Nº NF',
+
+    'Fornecedor',
+
+    'Data Envio',
+
+    'Valor Total',
+
+    'Status Pag.',
+
+    'Pago',
+
+    'NF Pagamento',
+
+    'Saldo',
+
+    'Coleta'
+
+  ];
+
+
+  const linhas =
+    dados.map(r => {
+
+      const total =
+        Number(r.valor || 0);
+
+      const pago =
+        Number(r.valorPago || 0);
+
+
+      return [
+
+        r.mes || '',
+
+        r.numeroNota || '',
+
+        r.fornecedor || '',
+
+        r.dataEnvio || '',
+
+        dinheiro(total),
+
+        r.statusPagamento ||
+          'Pendente',
+
+        dinheiro(pago),
+
+        r.notaPagamento || '-',
+
+        dinheiro(
+          total - pago
+        ),
+
+        r.status || ''
+
+      ];
+
+    });
+
+
+  doc.autoTable({
+
+    head: [colunas],
+
+    body: linhas,
+
+    startY: 32,
+
+    theme: 'striped',
+
+    styles: {
+
+      fontSize: 7,
+
+      cellPadding: 2.5,
+
+      valign: 'middle'
+
+    },
+
+    headStyles: {
+
+      fillColor:
+        [49,130,206],
+
+      textColor:
+        255,
+
+      fontStyle:
+        'bold',
+
+      fontSize:
+        7
+
+    },
+
+    alternateRowStyles: {
+
+      fillColor:
+        [247,250,252]
+
+    },
+
+    didDrawPage: function() {
+
+      const pagina =
+        doc.internal
+          .getNumberOfPages();
+
+
+      doc.setFontSize(8);
+
+
+      doc.text(
+
+        `Página ${pagina}`,
+
+        doc.internal.pageSize.getWidth() - 30,
+
+        doc.internal.pageSize.getHeight() - 8
+
+      );
+
+    }
+
+  });
+
+
+  /*
+    IMPORTANTE:
+    Não utiliza doc.save().
+    O PDF é aberto em uma nova aba
+    exclusivamente para impressão.
+  */
+
+  doc.autoPrint();
+
+
+  const blob =
+    doc.output('blob');
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const novaAba =
+    window.open(
+      url,
+      '_blank'
+    );
+
+
+  if (!novaAba) {
+
+    alert(
+      '⚠️ O navegador bloqueou a abertura da impressão.\n\n' +
+      'Permita pop-ups para este site e tente novamente.'
+    );
+
+    return;
+
+  }
+
+
+  /*
+    Libera a URL depois de algum tempo.
+  */
+
+  setTimeout(
+    () => {
+      URL.revokeObjectURL(url);
+    },
+    60000
+  );
+
+}
+
+
+/* =============================================================
+   PAINEL DE USUÁRIOS
+============================================================= */
+
+function togglePainelUsuarios() {
+
+  const login =
+    sessionStorage.getItem(
+      'loginUsuarioAtual'
+    );
+
+
+  if (
+    !login ||
+    login.toLowerCase() !== 'admin'
+  ) {
+
+    alert(
+      '❌ Acesso negado.\n\nApenas o Administrador pode gerenciar usuários.'
+    );
+
+    return;
+
+  }
+
+
+  const card =
+    document.getElementById(
+      'cardUsuarios'
+    );
+
+
+  if (
+    card.style.display === 'none'
+  ) {
+
+    card.style.display =
+      'block';
+
+    renderizarTabelaUsuarios();
+
+  } else {
+
+    card.style.display =
+      'none';
+
+  }
+
+}
+
+
+/* =============================================================
+   CARREGAR USUÁRIOS
+============================================================= */
+
+async function carregarUsuariosDoServidor() {
+
+  try {
+
+    const { data, error } =
+      await supabaseClient
+        .from(TABELA_USUARIOS)
+        .select('*')
+        .order(
+          'nome',
+          {
+            ascending: true
+          }
+        );
+
+
+    if (error) {
+
+      console.error(error);
+
+      return;
+
+    }
+
+
+    usuarios =
+      data || [];
+
+
+    renderizarTabelaUsuarios();
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+  }
+
+}
+
+
+/* =============================================================
+   SALVAR USUÁRIO
+============================================================= */
+
+async function salvarUsuario(event) {
+
+  event.preventDefault();
+
+
+  const loginAtual =
+    sessionStorage.getItem(
+      'loginUsuarioAtual'
+    );
+
+
+  if (
+    !loginAtual ||
+    loginAtual.toLowerCase() !== 'admin'
+  ) {
+
+    alert(
+      '❌ Permissão negada.'
+    );
+
+    return;
+
+  }
+
+
+  const nome =
+    document.getElementById(
+      'novoNome'
+    ).value.trim();
+
+
+  const usuario =
+    document.getElementById(
+      'novoUsuario'
+    ).value
+      .trim()
+      .toLowerCase();
+
+
+  const senha =
+    document.getElementById(
+      'novaSenha'
+    ).value.trim();
+
+
+  try {
+
+
+    const { data: existente } =
+      await supabaseClient
+        .from(TABELA_USUARIOS)
+        .select('*')
+        .eq('usuario', usuario)
+        .maybeSingle();
+
+
+    if (existente) {
+
+
+      const { error } =
+        await supabaseClient
+          .from(TABELA_USUARIOS)
+          .update({
+
+            nome,
+
+            senha
+
+          })
+          .eq(
+            'id',
+            existente.id
+          );
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      alert(
+        `✅ Usuário "${usuario}" atualizado!`
+      );
+
+
+    } else {
+
+
+      const { error } =
+        await supabaseClient
+          .from(TABELA_USUARIOS)
+          .insert({
+
+            nome,
+
+            usuario,
+
+            senha
+
+          });
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      alert(
+        `✅ Usuário "${usuario}" cadastrado!`
+      );
+
+    }
+
+
+    document
+      .getElementById(
+        'userForm'
+      )
+      .reset();
+
+
+    await carregarUsuariosDoServidor();
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      '❌ Erro ao salvar usuário:\n\n' +
+      erro.message
+    );
+
+  }
+
+}
+
+
+/* =============================================================
+   TABELA DE USUÁRIOS
+============================================================= */
+
+function renderizarTabelaUsuarios() {
+
+  const tbody =
+    document.getElementById(
+      'tabelaUsuariosBody'
+    );
+
+
+  tbody.innerHTML = '';
+
+
+  usuarios.forEach(
+    usuario => {
+
+      const tr =
+        document.createElement(
+          'tr'
+        );
+
+
+      tr.innerHTML = `
+
+        <td>
+          <strong>
+            ${escaparHTML(
+              usuario.nome
+            )}
+          </strong>
+        </td>
+
+        <td>
+          <code>
+            ${escaparHTML(
+              usuario.usuario
+            )}
+          </code>
+        </td>
+
+        <td>
+
+          <div class="acoes">
+
+            <button
+              type="button"
+              class="btn-action btn-edit"
+              onclick="prepararEdicaoUsuario('${escaparHTML(usuario.usuario)}')"
+            >
+              ✏️ Alterar
+            </button>
+
+            ${
+              usuario.usuario !== 'admin'
+                ? `
+                  <button
+                    type="button"
+                    class="btn-action btn-delete"
+                    onclick="excluirUsuario('${escaparHTML(usuario.usuario)}')"
+                  >
+                    🗑️ Excluir
+                  </button>
+                `
+                : ''
+            }
+
+          </div>
+
+        </td>
+
+      `;
+
+
+      tbody.appendChild(tr);
+
+    }
+  );
+
+}
+
+
+/* =============================================================
+   EDITAR USUÁRIO
+============================================================= */
+
+function prepararEdicaoUsuario(
+  usuarioLogin
+) {
+
+  const usuario =
+    usuarios.find(
+      u =>
+        u.usuario ===
+        usuarioLogin
+    );
+
+
+  if (!usuario) return;
+
+
+  document.getElementById(
+    'novoNome'
+  ).value =
+    usuario.nome;
+
+
+  document.getElementById(
+    'novoUsuario'
+  ).value =
+    usuario.usuario;
+
+
+  document.getElementById(
+    'novaSenha'
+  ).value =
+    usuario.senha;
+
+
+  document.getElementById(
+    'novaSenha'
+  ).focus();
+
+}
+
+
+/* =============================================================
+   EXCLUIR USUÁRIO
+============================================================= */
+
+async function excluirUsuario(
+  usuarioLogin
+) {
+
+  if (
+    usuarioLogin === 'admin'
+  ) {
+
+    alert(
+      '⚠️ O Administrador não pode ser excluído.'
+    );
+
+    return;
+
+  }
+
+
+  const confirmar =
+    confirm(
+      `Tem certeza que deseja excluir o usuário "${usuarioLogin}"?`
+    );
+
+
+  if (!confirmar) {
+    return;
+  }
+
+
+  try {
+
+    const usuario =
+      usuarios.find(
+        u =>
+          u.usuario ===
+          usuarioLogin
+      );
+
+
+    if (!usuario) return;
+
+
+    const { error } =
+      await supabaseClient
+        .from(TABELA_USUARIOS)
+        .delete()
+        .eq(
+          'id',
+          usuario.id
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    alert(
+      '✅ Usuário excluído.'
+    );
+
+
+    await carregarUsuariosDoServidor();
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    alert(
+      '❌ Erro ao excluir usuário:\n\n' +
+      erro.message
+    );
+
+  }
+
+}
+
+
+/* =============================================================
+   INICIALIZAÇÃO
+============================================================= */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  async function() {
+
+
+    atualizarCamposPagamento();
+
+
+    if (
+      verificarAutenticacao()
+    ) {
+
+      await carregarTudo();
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+</html>
