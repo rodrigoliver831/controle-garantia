@@ -1,0 +1,6623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Controle de Garantias e Devoluções</title>
+
+  <!-- =====================================================
+       SUPABASE
+  ====================================================== -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- =====================================================
+       EXCEL
+  ====================================================== -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- =====================================================
+       PDF
+  ====================================================== -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- =====================================================
+       CHARTS
+  ====================================================== -->
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+
+      font-family:
+        "Segoe UI",
+        Tahoma,
+        Geneva,
+        Verdana,
+        sans-serif;
+
+      background:
+        linear-gradient(
+          180deg,
+          #f4f7fb 0%,
+          #eef2f7 100%
+        );
+
+      color: #2d3748;
+
+      padding:
+        20px
+        15px
+        40px;
+    }
+
+
+    /* =====================================================
+       LOGIN
+    ====================================================== */
+
+    #loginOverlay {
+
+      position: fixed;
+
+      inset: 0;
+
+      width: 100%;
+      height: 100%;
+
+      background:
+        radial-gradient(
+          circle at top left,
+          #3182ce 0%,
+          transparent 35%
+        ),
+        linear-gradient(
+          135deg,
+          #111827,
+          #1f2937 60%,
+          #111827
+        );
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      z-index: 99999;
+
+      padding: 20px;
+    }
+
+
+    .login-card {
+
+      width: 100%;
+
+      max-width: 420px;
+
+      background: white;
+
+      border-radius: 18px;
+
+      padding: 35px 30px;
+
+      box-shadow:
+        0 25px 60px
+        rgba(0,0,0,.35);
+
+      text-align: center;
+    }
+
+
+    .login-logo {
+
+      width: 100%;
+      height: 110px;
+
+      object-fit: contain;
+
+      margin-bottom: 15px;
+    }
+
+
+    .login-logo-fallback {
+
+      width: 80px;
+      height: 80px;
+
+      border-radius: 50%;
+
+      background:
+        linear-gradient(
+          135deg,
+          #3182ce,
+          #2b6cb0
+        );
+
+      color: white;
+
+      display: none;
+
+      align-items: center;
+      justify-content: center;
+
+      margin:
+        0 auto
+        20px;
+
+      font-size: 30px;
+
+      font-weight: bold;
+    }
+
+
+    .login-card h1 {
+
+      font-size: 1.5rem;
+
+      color: #1a202c;
+
+      margin-bottom: 6px;
+    }
+
+
+    .login-subtitle {
+
+      color: #718096;
+
+      font-size: .9rem;
+
+      margin-bottom: 25px;
+    }
+
+
+    .login-group {
+
+      text-align: left;
+
+      margin-bottom: 16px;
+    }
+
+
+    .login-group label {
+
+      display: block;
+
+      font-size: .85rem;
+
+      font-weight: 700;
+
+      color: #4a5568;
+
+      margin-bottom: 7px;
+    }
+
+
+    .login-group input {
+
+      width: 100%;
+
+      padding: 13px;
+
+      border:
+        1px solid
+        #cbd5e0;
+
+      border-radius: 8px;
+
+      font-size: .95rem;
+
+      outline: none;
+    }
+
+
+    .login-group input:focus {
+
+      border-color: #3182ce;
+
+      box-shadow:
+        0 0 0 3px
+        rgba(49,130,206,.15);
+    }
+
+
+    .btn-login {
+
+      width: 100%;
+
+      padding: 13px;
+
+      border: 0;
+
+      border-radius: 8px;
+
+      background: #3182ce;
+
+      color: white;
+
+      font-weight: 700;
+
+      font-size: 1rem;
+
+      cursor: pointer;
+    }
+
+
+    .btn-login:disabled {
+
+      opacity: .65;
+
+      cursor: not-allowed;
+    }
+
+
+    .login-error {
+
+      display: none;
+
+      margin-top: 15px;
+
+      padding: 10px;
+
+      background: #fff5f5;
+
+      color: #c53030;
+
+      border:
+        1px solid
+        #fed7d7;
+
+      border-radius: 7px;
+
+      font-size: .85rem;
+    }
+
+
+    .login-loading {
+
+      display: none;
+
+      margin-top: 12px;
+
+      color: #3182ce;
+
+      font-size: .85rem;
+    }
+
+
+    /* =====================================================
+       TOPO
+    ====================================================== */
+
+    .top-bar {
+
+      max-width: 1150px;
+
+      margin:
+        0 auto
+        18px;
+
+      background: white;
+
+      padding:
+        10px
+        18px;
+
+      border-radius: 10px;
+
+      box-shadow:
+        0 3px 10px
+        rgba(0,0,0,.06);
+
+      display: flex;
+
+      justify-content:
+        space-between;
+
+      align-items: center;
+
+      gap: 15px;
+    }
+
+
+    .user-info {
+
+      color: #718096;
+
+      font-size: .9rem;
+    }
+
+
+    .user-info strong {
+
+      color: #2b6cb0;
+    }
+
+
+    .top-actions {
+
+      display: flex;
+
+      gap: 8px;
+    }
+
+
+    .btn-logout {
+
+      border: 0;
+
+      background: #e53e3e;
+
+      color: white;
+
+      padding:
+        8px
+        13px;
+
+      border-radius: 7px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+
+    /* =====================================================
+       CONTAINER
+    ====================================================== */
+
+    .container {
+
+      max-width: 1150px;
+
+      margin: auto;
+    }
+
+
+    .header-logo {
+
+      width: 100%;
+
+      min-height: 100px;
+
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
+      margin-bottom: 18px;
+
+      background: white;
+
+      border-radius: 12px;
+
+      padding:
+        12px
+        25px;
+
+      box-shadow:
+        0 3px 12px
+        rgba(0,0,0,.05);
+    }
+
+
+    .header-logo img {
+
+      display: block;
+
+      width: auto;
+
+      max-width:
+        min(360px, 80vw);
+
+      max-height: 90px;
+
+      object-fit: contain;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ====================================================== */
+
+    .card {
+
+      background: white;
+
+      padding: 24px;
+
+      border-radius: 12px;
+
+      box-shadow:
+        0 4px 15px
+        rgba(0,0,0,.07);
+
+      margin-bottom: 22px;
+    }
+
+
+    h2 {
+
+      color: #1a202c;
+
+      font-size: 1.25rem;
+
+      margin-bottom: 20px;
+
+      border-bottom:
+        2px solid
+        #edf2f7;
+
+      padding-bottom: 10px;
+    }
+
+
+    /* =====================================================
+       FORM
+    ====================================================== */
+
+    .form-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, 1fr);
+
+      gap: 15px;
+    }
+
+
+    .form-group {
+
+      display: flex;
+
+      flex-direction: column;
+    }
+
+
+    .form-group label {
+
+      color: #4a5568;
+
+      font-size: .85rem;
+
+      font-weight: 700;
+
+      margin-bottom: 6px;
+    }
+
+
+    .form-group input,
+    .form-group select {
+
+      width: 100%;
+
+      padding:
+        10px
+        11px;
+
+      border:
+        1px solid
+        #cbd5e0;
+
+      border-radius: 7px;
+
+      background: white;
+
+      color: #2d3748;
+
+      font-size: .92rem;
+
+      outline: none;
+    }
+
+
+    .form-group input:focus,
+    .form-group select:focus {
+
+      border-color: #3182ce;
+
+      box-shadow:
+        0 0 0 3px
+        rgba(49,130,206,.12);
+    }
+
+
+    .full-width {
+
+      grid-column:
+        span 2;
+    }
+
+
+    .btn-container {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 9px;
+
+      margin-top: 17px;
+    }
+
+
+    .btn {
+
+      border: 0;
+
+      border-radius: 7px;
+
+      padding:
+        10px
+        16px;
+
+      font-size: .9rem;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 6px;
+
+      transition: .2s;
+    }
+
+
+    .btn-add {
+
+      background: #3182ce;
+
+      color: white;
+    }
+
+
+    .btn-cancel {
+
+      display: none;
+
+      background: #718096;
+
+      color: white;
+    }
+
+
+    .btn-excel {
+
+      background: #276749;
+
+      color: white;
+    }
+
+
+    .btn-pdf {
+
+      background: #c53030;
+
+      color: white;
+    }
+
+
+    .btn-dashboard {
+
+      background:
+        linear-gradient(
+          135deg,
+          #805ad5,
+          #6b46c1
+        );
+
+      color: white;
+
+      box-shadow:
+        0 5px 15px
+        rgba(107,70,193,.25);
+    }
+
+
+    .btn-dashboard:hover {
+
+      transform:
+        translateY(-1px);
+
+      box-shadow:
+        0 8px 20px
+        rgba(107,70,193,.35);
+    }
+
+
+    /* =====================================================
+       KPI
+    ====================================================== */
+
+    .kpi-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(5, 1fr);
+
+      gap: 14px;
+    }
+
+
+    .kpi-card {
+
+      background: white;
+
+      border:
+        1px solid
+        #e2e8f0;
+
+      border-left:
+        5px solid
+        #cbd5e0;
+
+      border-radius: 10px;
+
+      padding: 15px;
+
+      box-shadow:
+        0 2px 6px
+        rgba(0,0,0,.03);
+    }
+
+
+    .kpi-total {
+      border-left-color: #3182ce;
+    }
+
+    .kpi-pago {
+      border-left-color: #38a169;
+    }
+
+    .kpi-saldo {
+      border-left-color: #dd6b20;
+    }
+
+    .kpi-coletado {
+      border-left-color: #319795;
+    }
+
+    .kpi-nao-coletado {
+      border-left-color: #e53e3e;
+    }
+
+
+    .kpi-title {
+
+      display: block;
+
+      color: #718096;
+
+      font-size: .75rem;
+
+      font-weight: 800;
+
+      text-transform: uppercase;
+
+      margin-bottom: 7px;
+    }
+
+
+    .kpi-value {
+
+      display: block;
+
+      color: #2d3748;
+
+      font-size: 1.2rem;
+
+      font-weight: 800;
+    }
+
+
+    .kpi-sub {
+
+      display: block;
+
+      color: #a0aec0;
+
+      font-size: .75rem;
+
+      margin-top: 4px;
+    }
+
+
+    /* =====================================================
+       FILTROS
+    ====================================================== */
+
+    .filter-box {
+
+      display: grid;
+
+      grid-template-columns:
+        1fr
+        1fr
+        1fr
+        2fr;
+
+      gap: 10px;
+
+      background: #f7fafc;
+
+      border:
+        1px solid
+        #e2e8f0;
+
+      padding: 12px;
+
+      border-radius: 8px;
+
+      margin-bottom: 15px;
+    }
+
+
+    .filter-group {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 7px;
+    }
+
+
+    .filter-group label {
+
+      white-space: nowrap;
+
+      font-size: .82rem;
+
+      color: #4a5568;
+    }
+
+
+    .filter-group select,
+    .filter-group input {
+
+      min-width: 0;
+
+      flex: 1;
+
+      padding:
+        8px
+        10px;
+
+      border:
+        1px solid
+        #cbd5e0;
+
+      border-radius: 6px;
+
+      background: white;
+
+      font-size: .85rem;
+    }
+
+
+    /* =====================================================
+       TABELA
+    ====================================================== */
+
+    .actions-header {
+
+      display: flex;
+
+      justify-content:
+        space-between;
+
+      align-items: center;
+
+      gap: 10px;
+
+      flex-wrap: wrap;
+    }
+
+
+    .actions-header h2 {
+
+      margin-bottom: 0;
+    }
+
+
+    .table-container {
+
+      overflow-x: auto;
+
+      margin-top: 10px;
+    }
+
+
+    table {
+
+      width: 100%;
+
+      border-collapse: collapse;
+
+      text-align: left;
+
+      min-width: 1050px;
+    }
+
+
+    th,
+    td {
+
+      padding:
+        10px
+        11px;
+
+      border-bottom:
+        1px solid
+        #e2e8f0;
+
+      vertical-align: middle;
+
+      font-size: .84rem;
+    }
+
+
+    th {
+
+      background: #f7fafc;
+
+      color: #4a5568;
+
+      font-size: .75rem;
+
+      text-transform: uppercase;
+
+      font-weight: 800;
+
+      white-space: nowrap;
+    }
+
+
+    tbody tr:nth-child(even) {
+
+      background: #fafafa;
+    }
+
+
+    tbody tr:hover {
+
+      background: #f0f7ff;
+    }
+
+
+    .badge {
+
+      display: inline-block;
+
+      padding:
+        4px
+        7px;
+
+      border-radius: 6px;
+
+      font-size: .72rem;
+
+      font-weight: 800;
+
+      white-space: nowrap;
+    }
+
+
+    .badge-pago {
+
+      background: #c6f6d5;
+
+      color: #22543d;
+    }
+
+
+    .badge-parcial {
+
+      background: #feebc8;
+
+      color: #744210;
+    }
+
+
+    .badge-pendente {
+
+      background: #fed7d7;
+
+      color: #742a2a;
+    }
+
+
+    .saldo-text {
+
+      color: #e53e3e;
+
+      font-weight: 800;
+    }
+
+
+    .btn-status {
+
+      border: 0;
+
+      border-radius: 12px;
+
+      padding:
+        6px
+        9px;
+
+      font-size: .72rem;
+
+      font-weight: 800;
+
+      cursor: pointer;
+
+      white-space: nowrap;
+    }
+
+
+    .status-coletado {
+
+      background: #c6f6d5;
+
+      color: #22543d;
+    }
+
+
+    .status-nao-coletado {
+
+      background: #fed7d7;
+
+      color: #742a2a;
+    }
+
+
+    /* =====================================================
+       AÇÕES SOMENTE ÍCONES
+    ====================================================== */
+
+    .acoes {
+
+      white-space: nowrap;
+
+      min-width: 90px;
+
+      text-align: center;
+    }
+
+
+    .btn-action {
+
+      width: 34px;
+      height: 34px;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border: 0;
+
+      border-radius: 7px;
+
+      font-size: 15px;
+
+      cursor: pointer;
+
+      margin:
+        0
+        3px;
+
+      transition: .2s;
+    }
+
+
+    .btn-action:hover {
+
+      transform:
+        translateY(-2px);
+
+      box-shadow:
+        0 4px 10px
+        rgba(0,0,0,.15);
+    }
+
+
+    .btn-edit {
+
+      background: #d69e2e;
+
+      color: white;
+    }
+
+
+    .btn-delete {
+
+      background: #e53e3e;
+
+      color: white;
+    }
+
+
+    /* =====================================================
+       MENSAGENS
+    ====================================================== */
+
+    .empty-message {
+
+      text-align: center;
+
+      color: #a0aec0;
+
+      padding: 35px 10px;
+    }
+
+
+    .system-message {
+
+      position: fixed;
+
+      right: 20px;
+
+      bottom: 20px;
+
+      z-index: 100000;
+
+      max-width: 380px;
+
+      padding:
+        13px
+        16px;
+
+      border-radius: 8px;
+
+      color: white;
+
+      font-size: .88rem;
+
+      font-weight: 600;
+
+      box-shadow:
+        0 8px 25px
+        rgba(0,0,0,.2);
+
+      display: none;
+    }
+
+
+    .message-success {
+      background: #38a169;
+    }
+
+
+    .message-error {
+      background: #e53e3e;
+    }
+
+
+    .message-info {
+      background: #3182ce;
+    }
+
+
+    /* =====================================================
+       LOADING
+    ====================================================== */
+
+    #loadingScreen {
+
+      position: fixed;
+
+      inset: 0;
+
+      background:
+        rgba(255,255,255,.92);
+
+      z-index: 99998;
+
+      display: none;
+
+      align-items: center;
+
+      justify-content: center;
+
+      flex-direction: column;
+
+      gap: 12px;
+
+      color: #3182ce;
+
+      font-weight: 700;
+    }
+
+
+    .spinner {
+
+      width: 42px;
+      height: 42px;
+
+      border:
+        4px solid
+        #bee3f8;
+
+      border-top-color:
+        #3182ce;
+
+      border-radius: 50%;
+
+      animation:
+        spin .8s
+        linear infinite;
+    }
+
+
+    @keyframes spin {
+
+      to {
+        transform: rotate(360deg);
+      }
+
+    }
+
+
+    /* =====================================================
+       RESPONSIVO
+    ====================================================== */
+
+    @media (max-width: 1000px) {
+
+      .kpi-grid {
+
+        grid-template-columns:
+          repeat(3, 1fr);
+      }
+
+      .form-grid {
+
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      .filter-box {
+
+        grid-template-columns:
+          1fr
+          1fr;
+      }
+
+    }
+
+
+    @media (max-width: 650px) {
+
+      body {
+
+        padding:
+          10px
+          8px
+          30px;
+      }
+
+
+      .top-bar {
+
+        padding:
+          9px
+          12px;
+      }
+
+
+      .user-info {
+
+        font-size: .76rem;
+      }
+
+
+      .header-logo {
+
+        min-height: 80px;
+
+        padding: 10px;
+      }
+
+
+      .header-logo img {
+
+        max-width: 260px;
+
+        max-height: 70px;
+      }
+
+
+      .card {
+
+        padding: 15px;
+      }
+
+
+      .kpi-grid {
+
+        grid-template-columns:
+          1fr 1fr;
+      }
+
+
+      .form-grid {
+
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .full-width {
+
+        grid-column:
+          span 1;
+      }
+
+
+      .filter-box {
+
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .filter-group {
+
+        width: 100%;
+      }
+
+
+      .actions-header {
+
+        align-items:
+          stretch;
+      }
+
+
+      .actions-header .btn-container {
+
+        width: 100%;
+      }
+
+
+      .actions-header .btn {
+
+        flex: 1;
+      }
+
+    }
+
+
+    @media print {
+
+      body {
+
+        background: white;
+
+        padding: 0;
+      }
+
+
+      #loginOverlay,
+      #loadingScreen,
+      .top-bar,
+      .card-form,
+      .filter-box,
+      .no-print,
+      .acoes,
+      .btn-status {
+
+        display: none !important;
+      }
+
+
+      .container {
+
+        max-width: none;
+      }
+
+
+      .card {
+
+        box-shadow: none;
+
+        padding: 0;
+      }
+
+
+      .header-logo {
+
+        box-shadow: none;
+      }
+
+
+      table {
+
+        min-width: 0;
+      }
+
+
+      th {
+
+        background: #eee !important;
+
+        color: #000;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     LOGIN
+====================================================== -->
+
+<div id="loginOverlay">
+
+  <div class="login-card">
+
+    <img
+      src="nova_lik.jpg"
+      class="login-logo"
+      alt="Logotipo"
+      onerror="
+        this.style.display='none';
+        document.getElementById('loginLogoFallback').style.display='flex';
+      "
+    >
+
+    <div
+      id="loginLogoFallback"
+      class="login-logo-fallback"
+    >
+      LK
+    </div>
+
+
+    <h1>
+      Acesso ao Sistema
+    </h1>
+
+
+    <p class="login-subtitle">
+      Controle de Garantias e Devoluções
+    </p>
+
+
+    <form id="loginForm">
+
+      <div class="login-group">
+
+        <label for="loginEmail">
+          E-mail
+        </label>
+
+        <input
+          type="email"
+          id="loginEmail"
+          placeholder="Digite seu e-mail"
+          autocomplete="username"
+          required
+        >
+
+      </div>
+
+
+      <div class="login-group">
+
+        <label for="loginSenha">
+          Senha
+        </label>
+
+        <input
+          type="password"
+          id="loginSenha"
+          placeholder="Digite sua senha"
+          autocomplete="current-password"
+          required
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="btnLogin"
+        class="btn-login"
+      >
+        🔐 Entrar
+      </button>
+
+
+      <div
+        id="loginLoading"
+        class="login-loading"
+      >
+        Verificando acesso...
+      </div>
+
+
+      <div
+        id="loginError"
+        class="login-error"
+      ></div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     LOADING
+====================================================== -->
+
+<div id="loadingScreen">
+
+  <div class="spinner"></div>
+
+  <div id="loadingText">
+    Carregando...
+  </div>
+
+</div>
+
+
+<!-- =====================================================
+     TOAST
+====================================================== -->
+
+<div
+  id="systemMessage"
+  class="system-message"
+></div>
+
+
+<!-- =====================================================
+     TOPO
+====================================================== -->
+
+<div class="top-bar no-print">
+
+  <div class="user-info">
+
+    Usuário logado:
+
+    <strong id="currentUserDisplay">
+      --
+    </strong>
+
+  </div>
+
+
+  <div class="top-actions">
+
+    <button
+      type="button"
+      onclick="logout()"
+      class="btn-logout"
+    >
+      🔒 Sair
+    </button>
+
+  </div>
+
+</div>
+
+
+<div class="container">
+
+
+  <!-- =====================================================
+       LOGO
+  ====================================================== -->
+
+  <div class="header-logo">
+
+    <img
+      src="nova_lik.jpg"
+      alt="Logotipo da Empresa"
+      onerror="this.style.display='none'"
+    >
+
+  </div>
+
+
+  <!-- =====================================================
+       FORMULÁRIO
+  ====================================================== -->
+
+  <div class="card card-form">
+
+    <h2 id="formTitle">
+      📦 Envio Mercadoria Garantia/Devolução
+    </h2>
+
+
+    <form id="garantiaForm">
+
+      <input
+        type="hidden"
+        id="editId"
+        value=""
+      >
+
+
+      <div class="form-grid">
+
+
+        <div class="form-group">
+
+          <label for="mes">
+            Mês de Referência
+          </label>
+
+          <select
+            id="mes"
+            required
+          >
+
+            <option
+              value=""
+              disabled
+              selected
+            >
+              Selecione
+            </option>
+
+            <option>Janeiro</option>
+            <option>Fevereiro</option>
+            <option>Março</option>
+            <option>Abril</option>
+            <option>Maio</option>
+            <option>Junho</option>
+            <option>Julho</option>
+            <option>Agosto</option>
+            <option>Setembro</option>
+            <option>Outubro</option>
+            <option>Novembro</option>
+            <option>Dezembro</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="numero_nota">
+            Nº da Nota Fiscal
+          </label>
+
+          <input
+            type="text"
+            id="numero_nota"
+            placeholder="Ex.: 000123"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="fornecedor">
+            Fornecedor
+          </label>
+
+          <input
+            type="text"
+            id="fornecedor"
+            list="listaFornecedores"
+            placeholder="Digite ou selecione..."
+            autocomplete="off"
+            required
+          >
+
+          <datalist
+            id="listaFornecedores"
+          ></datalist>
+
+        </div>
+
+
+        <!-- FRONT-END: DATA DE PROCESSAMENTO
+             BANCO: data_envio -->
+
+        <div class="form-group">
+
+          <label for="data_envio">
+            Data de Processamento
+          </label>
+
+          <input
+            type="date"
+            id="data_envio"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="valor">
+            Valor Total (R$)
+          </label>
+
+          <input
+            type="number"
+            id="valor"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="status_coleta">
+            Status Coleta
+          </label>
+
+          <select
+            id="status_coleta"
+            required
+          >
+
+            <option value="Não Coletado">
+              Não Coletado
+            </option>
+
+            <option value="Coletado">
+              Coletado
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="status_pagamento">
+            Status Pagamento
+          </label>
+
+          <select
+            id="status_pagamento"
+            required
+          >
+
+            <option value="Pendente">
+              Pendente
+            </option>
+
+            <option value="Pago Total">
+              Pago Total
+            </option>
+
+            <option value="Pago Parcial">
+              Pago Parcial
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="valor_pago">
+            Valor Pago (R$)
+          </label>
+
+          <input
+            type="number"
+            id="valor_pago"
+            step="0.01"
+            min="0"
+            value="0"
+            placeholder="0,00"
+          >
+
+        </div>
+
+
+        <!-- BANCO: nota_pagamento
+             FRONT-END: Observações em geral -->
+
+        <div class="form-group full-width">
+
+          <label for="nota_pagamento">
+            📝 Observações em geral
+          </label>
+
+          <input
+            type="text"
+            id="nota_pagamento"
+            placeholder="Digite observações, informações ou detalhes adicionais..."
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="btn-container">
+
+        <button
+          type="submit"
+          id="btnSubmit"
+          class="btn btn-add"
+        >
+          ➕ Adicionar ao Relatório
+        </button>
+
+
+        <button
+          type="button"
+          id="btnCancel"
+          onclick="cancelarEdicao()"
+          class="btn btn-cancel"
+        >
+          ❌ Cancelar Edição
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+
+  <!-- =====================================================
+       KPI
+  ====================================================== -->
+
+  <div class="card no-print">
+
+    <h2>
+      📌 Resumo Geral
+    </h2>
+
+
+    <div class="kpi-grid">
+
+
+      <div class="kpi-card kpi-total">
+
+        <span class="kpi-title">
+          Total Cadastrado
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiTotalValor"
+        >
+          R$ 0,00
+        </span>
+
+        <span
+          class="kpi-sub"
+          id="kpiTotalQtd"
+        >
+          0 registros
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-pago">
+
+        <span class="kpi-title">
+          Total Recebido/Pago
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiTotalPago"
+        >
+          R$ 0,00
+        </span>
+
+        <span class="kpi-sub">
+          Garantias liquidadas
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-saldo">
+
+        <span class="kpi-title">
+          Saldo Pendente
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiTotalSaldo"
+        >
+          R$ 0,00
+        </span>
+
+        <span class="kpi-sub">
+          A receber/cobrar
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-coletado">
+
+        <span class="kpi-title">
+          Coletados
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiColetadoValor"
+        >
+          R$ 0,00
+        </span>
+
+        <span
+          class="kpi-sub"
+          id="kpiColetadoQtd"
+        >
+          0 itens
+        </span>
+
+      </div>
+
+
+      <div class="kpi-card kpi-nao-coletado">
+
+        <span class="kpi-title">
+          Pendente Coleta
+        </span>
+
+        <span
+          class="kpi-value"
+          id="kpiNaoColetadoValor"
+        >
+          R$ 0,00
+        </span>
+
+        <span
+          class="kpi-sub"
+          id="kpiNaoColetadoQtd"
+        >
+          0 itens
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       TABELA
+  ====================================================== -->
+
+  <div class="card">
+
+    <div class="actions-header">
+
+      <h2>
+        📋 Registro de Garantias
+      </h2>
+
+
+      <div class="btn-container no-print">
+
+        <!-- NOVO DASHBOARD -->
+
+        <button
+          type="button"
+          onclick="abrirDashboard()"
+          class="btn btn-dashboard"
+        >
+          📊 Dashboard
+        </button>
+
+
+        <button
+          type="button"
+          onclick="exportarExcel()"
+          class="btn btn-excel"
+        >
+          📊 Excel
+        </button>
+
+
+        <button
+          type="button"
+          onclick="exportarPDF()"
+          class="btn btn-pdf"
+        >
+          📄 PDF
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         FILTROS
+    ====================================================== -->
+
+    <div class="filter-box no-print">
+
+
+      <div class="filter-group">
+
+        <label for="filtroMes">
+          📅 Mês
+        </label>
+
+        <select
+          id="filtroMes"
+          onchange="filtrarTabela()"
+        >
+
+          <option value="">
+            Todos
+          </option>
+
+          <option>Janeiro</option>
+          <option>Fevereiro</option>
+          <option>Março</option>
+          <option>Abril</option>
+          <option>Maio</option>
+          <option>Junho</option>
+          <option>Julho</option>
+          <option>Agosto</option>
+          <option>Setembro</option>
+          <option>Outubro</option>
+          <option>Novembro</option>
+          <option>Dezembro</option>
+
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="filtroStatus">
+          📌 Coleta
+        </label>
+
+        <select
+          id="filtroStatus"
+          onchange="filtrarTabela()"
+        >
+
+          <option value="">
+            Todos
+          </option>
+
+          <option value="Coletado">
+            Coletado
+          </option>
+
+          <option value="Não Coletado">
+            Não Coletado
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="filtroPagamento">
+          💰 Pagamento
+        </label>
+
+        <select
+          id="filtroPagamento"
+          onchange="filtrarTabela()"
+        >
+
+          <option value="">
+            Todos
+          </option>
+
+          <option value="Pendente">
+            Pendente
+          </option>
+
+          <option value="Pago Total">
+            Pago Total
+          </option>
+
+          <option value="Pago Parcial">
+            Pago Parcial
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="filter-group">
+
+        <label for="filtroGeral">
+          🔎 Buscar
+        </label>
+
+        <input
+          type="text"
+          id="filtroGeral"
+          placeholder="Fornecedor, Nº NF ou observações..."
+          oninput="filtrarTabela()"
+        >
+
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TABELA
+    ====================================================== -->
+
+    <div class="table-container">
+
+      <table id="tabelaGarantia">
+
+        <thead>
+
+          <tr>
+
+            <th>Mês</th>
+
+            <th>Nº NF</th>
+
+            <th>Fornecedor</th>
+
+            <th>Data Processamento</th>
+
+            <th>Valor Total</th>
+
+            <th>Pago</th>
+
+            <th>Observações em Geral</th>
+
+            <th>Saldo</th>
+
+            <th>Coleta</th>
+
+            <th class="no-print">
+              Ações
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody
+          id="tabelaBody"
+        ></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   CONFIGURAÇÃO SUPABASE
+========================================================= */
+
+const SUPABASE_URL =
+  "https://tgkdfxnbhczbvzhzdjkn.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_vmEfsC1EJp-jBZBX3nCKvg_jXnjx-CZ";
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+/* =========================================================
+   VARIÁVEIS
+========================================================= */
+
+let registros = [];
+
+let usuarioAtual = null;
+
+
+/* =========================================================
+   ORDEM DOS MESES
+========================================================= */
+
+const ORDEM_MESES = {
+
+  Janeiro: 1,
+  Fevereiro: 2,
+  Março: 3,
+  Abril: 4,
+  Maio: 5,
+  Junho: 6,
+  Julho: 7,
+  Agosto: 8,
+  Setembro: 9,
+  Outubro: 10,
+  Novembro: 11,
+  Dezembro: 12
+
+};
+
+
+/* =========================================================
+   ELEMENTOS
+========================================================= */
+
+const loginOverlay =
+  document.getElementById(
+    "loginOverlay"
+  );
+
+const loginForm =
+  document.getElementById(
+    "loginForm"
+  );
+
+const loginEmail =
+  document.getElementById(
+    "loginEmail"
+  );
+
+const loginSenha =
+  document.getElementById(
+    "loginSenha"
+  );
+
+const loginError =
+  document.getElementById(
+    "loginError"
+  );
+
+const btnLogin =
+  document.getElementById(
+    "btnLogin"
+  );
+
+const loginLoading =
+  document.getElementById(
+    "loginLoading"
+  );
+
+
+/* =========================================================
+   UTILITÁRIOS
+========================================================= */
+
+function mostrarLoading(
+  texto = "Carregando..."
+) {
+
+  document.getElementById(
+    "loadingText"
+  ).textContent = texto;
+
+  document.getElementById(
+    "loadingScreen"
+  ).style.display = "flex";
+
+}
+
+
+function esconderLoading() {
+
+  document.getElementById(
+    "loadingScreen"
+  ).style.display = "none";
+
+}
+
+
+function mostrarMensagem(
+  texto,
+  tipo = "success"
+) {
+
+  const el =
+    document.getElementById(
+      "systemMessage"
+    );
+
+  el.textContent = texto;
+
+  el.className =
+    "system-message message-" +
+    tipo;
+
+  el.style.display =
+    "block";
+
+  setTimeout(() => {
+
+    el.style.display =
+      "none";
+
+  }, 3500);
+
+}
+
+
+function formatarMoeda(valor) {
+
+  return Number(valor || 0)
+    .toLocaleString(
+      "pt-BR",
+      {
+        style: "currency",
+        currency: "BRL"
+      }
+    );
+
+}
+
+
+function escaparHTML(valor) {
+
+  return String(
+    valor ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+function formatarDataBR(data) {
+
+  if (!data)
+    return "";
+
+  const partes =
+    data.split("-");
+
+  if (
+    partes.length !== 3
+  )
+    return data;
+
+  return (
+    `${partes[2]}/` +
+    `${partes[1]}/` +
+    `${partes[0]}`
+  );
+
+}
+
+
+function dataParaInput(data) {
+
+  if (!data)
+    return "";
+
+  if (
+    /^\d{4}-\d{2}-\d{2}$/.test(data)
+  )
+    return data;
+
+  const partes =
+    data.split("/");
+
+  if (
+    partes.length !== 3
+  )
+    return "";
+
+  return (
+    `${partes[2]}-` +
+    `${partes[1]}-` +
+    `${partes[0]}`
+  );
+
+}
+
+
+/* =========================================================
+   ORDENAÇÃO MÊS + DIA CRESCENTE
+========================================================= */
+
+function ordenarPorMesEDia(lista) {
+
+  return [...lista].sort(
+    (a, b) => {
+
+      const mesA =
+        ORDEM_MESES[a.mes] || 99;
+
+      const mesB =
+        ORDEM_MESES[b.mes] || 99;
+
+      if (
+        mesA !== mesB
+      ) {
+
+        return mesA - mesB;
+
+      }
+
+
+      const dataA =
+        a.data_envio
+          ? new Date(
+              a.data_envio +
+              "T00:00:00"
+            )
+          : new Date(
+              "9999-12-31"
+            );
+
+      const dataB =
+        b.data_envio
+          ? new Date(
+              b.data_envio +
+              "T00:00:00"
+            )
+          : new Date(
+              "9999-12-31"
+            );
+
+
+      if (
+        dataA.getTime() !==
+        dataB.getTime()
+      ) {
+
+        return (
+          dataA.getTime() -
+          dataB.getTime()
+        );
+
+      }
+
+
+      return (
+        Number(a.id || 0) -
+        Number(b.id || 0)
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+loginForm.addEventListener(
+  "submit",
+  autenticarUsuario
+);
+
+
+async function autenticarUsuario(
+  event
+) {
+
+  event.preventDefault();
+
+  loginError.style.display =
+    "none";
+
+  const email =
+    loginEmail.value.trim();
+
+  const senha =
+    loginSenha.value;
+
+  if (
+    !email ||
+    !senha
+  ) {
+
+    mostrarErroLogin(
+      "Informe o e-mail e a senha."
+    );
+
+    return;
+
+  }
+
+
+  btnLogin.disabled =
+    true;
+
+  btnLogin.textContent =
+    "Entrando...";
+
+  loginLoading.style.display =
+    "block";
+
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .signInWithPassword({
+
+          email,
+          password: senha
+
+        });
+
+
+    if (error)
+      throw error;
+
+
+    if (!data.session) {
+
+      throw new Error(
+        "Não foi possível criar a sessão."
+      );
+
+    }
+
+
+    usuarioAtual =
+      data.user;
+
+    await iniciarSistema();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    let mensagem =
+      "E-mail ou senha incorretos.";
+
+
+    if (
+      error.message &&
+      error.message
+        .toLowerCase()
+        .includes(
+          "email not confirmed"
+        )
+    ) {
+
+      mensagem =
+        "Este e-mail ainda não foi confirmado no Supabase.";
+
+    }
+
+
+    mostrarErroLogin(
+      mensagem
+    );
+
+
+  } finally {
+
+    btnLogin.disabled =
+      false;
+
+    btnLogin.textContent =
+      "🔐 Entrar";
+
+    loginLoading.style.display =
+      "none";
+
+  }
+
+}
+
+
+function mostrarErroLogin(
+  mensagem
+) {
+
+  loginError.textContent =
+    "⚠️ " + mensagem;
+
+  loginError.style.display =
+    "block";
+
+}
+
+
+/* =========================================================
+   SESSÃO
+========================================================= */
+
+async function verificarSessao() {
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .getSession();
+
+
+    if (error)
+      throw error;
+
+
+    if (data.session) {
+
+      usuarioAtual =
+        data.session.user;
+
+      await iniciarSistema();
+
+    } else {
+
+      mostrarLogin();
+
+    }
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    mostrarLogin();
+
+  }
+
+}
+
+
+/* =========================================================
+   INICIAR SISTEMA
+========================================================= */
+
+async function iniciarSistema() {
+
+  loginOverlay.style.display =
+    "none";
+
+  atualizarUsuarioNaTela();
+
+  mostrarLoading(
+    "Carregando registros..."
+  );
+
+
+  try {
+
+    await carregarRegistros();
+
+    atualizarDatalistFornecedores();
+
+    atualizarCardsResumo();
+
+    filtrarTabela();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    mostrarMensagem(
+      "Erro ao carregar os registros.",
+      "error"
+    );
+
+
+  } finally {
+
+    esconderLoading();
+
+  }
+
+}
+
+
+function mostrarLogin() {
+
+  loginOverlay.style.display =
+    "flex";
+
+  document.getElementById(
+    "currentUserDisplay"
+  ).textContent = "--";
+
+}
+
+
+function atualizarUsuarioNaTela() {
+
+  if (!usuarioAtual)
+    return;
+
+  document.getElementById(
+    "currentUserDisplay"
+  ).textContent =
+    usuarioAtual.email || "";
+
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+async function logout() {
+
+  if (
+    !confirm(
+      "Deseja realmente sair do sistema?"
+    )
+  )
+    return;
+
+
+  await supabaseClient
+    .auth
+    .signOut();
+
+
+  usuarioAtual =
+    null;
+
+  registros =
+    [];
+
+
+  document.getElementById(
+    "loginEmail"
+  ).value = "";
+
+  document.getElementById(
+    "loginSenha"
+  ).value = "";
+
+  document.getElementById(
+    "tabelaBody"
+  ).innerHTML = "";
+
+
+  mostrarLogin();
+
+}
+
+
+/* =========================================================
+   AUTH LISTENER
+========================================================= */
+
+supabaseClient.auth.onAuthStateChange(
+  async (
+    event,
+    session
+  ) => {
+
+    if (
+      event ===
+      "SIGNED_OUT"
+    ) {
+
+      mostrarLogin();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   CARREGAR REGISTROS
+========================================================= */
+
+async function carregarRegistros() {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from(
+        "registros_garantia"
+      )
+      .select("*")
+      .order(
+        "id",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error)
+    throw error;
+
+
+  registros =
+    data || [];
+
+}
+
+
+/* =========================================================
+   FORMULÁRIO
+========================================================= */
+
+document
+  .getElementById(
+    "garantiaForm"
+  )
+  .addEventListener(
+    "submit",
+    salvarRegistro
+  );
+
+
+async function salvarRegistro(
+  event
+) {
+
+  event.preventDefault();
+
+
+  if (!usuarioAtual) {
+
+    mostrarMensagem(
+      "Sua sessão expirou. Faça login novamente.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const editId =
+    document.getElementById(
+      "editId"
+    ).value;
+
+
+  const mes =
+    document.getElementById(
+      "mes"
+    ).value;
+
+
+  const numeroNota =
+    document.getElementById(
+      "numero_nota"
+    ).value.trim();
+
+
+  const fornecedor =
+    document.getElementById(
+      "fornecedor"
+    ).value.trim();
+
+
+  const dataEnvio =
+    document.getElementById(
+      "data_envio"
+    ).value;
+
+
+  const valor =
+    Math.max(
+      0,
+      parseFloat(
+        document.getElementById(
+          "valor"
+        ).value
+      ) || 0
+    );
+
+
+  const statusColeta =
+    document.getElementById(
+      "status_coleta"
+    ).value;
+
+
+  const statusPagamento =
+    document.getElementById(
+      "status_pagamento"
+    ).value;
+
+
+  let valorPago =
+    Math.max(
+      0,
+      parseFloat(
+        document.getElementById(
+          "valor_pago"
+        ).value
+      ) || 0
+    );
+
+
+  /*
+     O CAMPO CONTINUA SENDO
+     nota_pagamento NO BANCO.
+     
+     APENAS O TEXTO DA INTERFACE
+     FOI ALTERADO PARA
+     "OBSERVAÇÕES EM GERAL".
+  */
+
+  const notaPagamento =
+    document.getElementById(
+      "nota_pagamento"
+    ).value.trim();
+
+
+  /* =====================================================
+     VALIDAÇÕES
+  ====================================================== */
+
+  if (
+    statusPagamento ===
+    "Pendente"
+  ) {
+
+    valorPago = 0;
+
+  }
+
+
+  if (
+    statusPagamento ===
+    "Pago Total"
+  ) {
+
+    valorPago = valor;
+
+  }
+
+
+  if (
+    statusPagamento ===
+      "Pago Parcial" &&
+    valorPago >= valor
+  ) {
+
+    mostrarMensagem(
+      "No pagamento parcial, o valor pago deve ser menor que o valor total.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if (
+    valorPago > valor
+  ) {
+
+    mostrarMensagem(
+      "O valor pago não pode ser maior que o valor total.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  /*
+     IMPORTANTE:
+     ESTES NOMES CONTINUAM IGUAIS
+     AOS CAMPOS DO SUPABASE.
+  */
+
+  const dados = {
+
+    mes,
+
+    numero_nota:
+      numeroNota,
+
+    fornecedor,
+
+    data_envio:
+      dataEnvio,
+
+    valor,
+
+    status_coleta:
+      statusColeta,
+
+    status_pagamento:
+      statusPagamento,
+
+    valor_pago:
+      valorPago,
+
+    nota_pagamento:
+      notaPagamento
+
+  };
+
+
+  mostrarLoading(
+    editId
+      ? "Salvando alterações..."
+      : "Salvando registro..."
+  );
+
+
+  try {
+
+    if (editId) {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "registros_garantia"
+          )
+          .update(dados)
+          .eq(
+            "id",
+            editId
+          );
+
+
+      if (error)
+        throw error;
+
+
+      mostrarMensagem(
+        "Registro atualizado com sucesso!"
+      );
+
+
+    } else {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "registros_garantia"
+          )
+          .insert([
+            dados
+          ]);
+
+
+      if (error)
+        throw error;
+
+
+      mostrarMensagem(
+        "Registro cadastrado com sucesso!"
+      );
+
+    }
+
+
+    limparFormulario();
+
+    await carregarRegistros();
+
+    atualizarDatalistFornecedores();
+
+    atualizarCardsResumo();
+
+    filtrarTabela();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    mostrarMensagem(
+      "Erro ao salvar: " +
+      (
+        error.message ||
+        "erro desconhecido"
+      ),
+      "error"
+    );
+
+
+  } finally {
+
+    esconderLoading();
+
+  }
+
+}
+
+
+/* =========================================================
+   PAGAMENTO
+========================================================= */
+
+document
+  .getElementById(
+    "valor"
+  )
+  .addEventListener(
+    "input",
+    atualizarCamposPagamento
+  );
+
+
+document
+  .getElementById(
+    "status_pagamento"
+  )
+  .addEventListener(
+    "change",
+    atualizarCamposPagamento
+  );
+
+
+function atualizarCamposPagamento() {
+
+  const valor =
+    Math.max(
+      0,
+      parseFloat(
+        document.getElementById(
+          "valor"
+        ).value
+      ) || 0
+    );
+
+
+  const status =
+    document.getElementById(
+      "status_pagamento"
+    ).value;
+
+
+  const campo =
+    document.getElementById(
+      "valor_pago"
+    );
+
+
+  if (
+    status === "Pendente"
+  ) {
+
+    campo.value =
+      "0.00";
+
+    campo.readOnly =
+      true;
+
+
+  } else if (
+    status ===
+    "Pago Total"
+  ) {
+
+    campo.value =
+      valor.toFixed(2);
+
+    campo.readOnly =
+      true;
+
+
+  } else {
+
+    campo.readOnly =
+      false;
+
+
+    const atual =
+      parseFloat(
+        campo.value
+      ) || 0;
+
+
+    if (
+      atual <= 0 ||
+      atual >= valor
+    ) {
+
+      campo.value =
+        valor > 0
+          ? (
+              valor / 2
+            ).toFixed(2)
+          : "0.00";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   EDITAR
+========================================================= */
+
+function prepararEdicao(id) {
+
+  const registro =
+    registros.find(
+      r =>
+        Number(r.id) ===
+        Number(id)
+    );
+
+
+  if (!registro)
+    return;
+
+
+  document.getElementById(
+    "editId"
+  ).value =
+    registro.id;
+
+
+  document.getElementById(
+    "mes"
+  ).value =
+    registro.mes;
+
+
+  document.getElementById(
+    "numero_nota"
+  ).value =
+    registro.numero_nota;
+
+
+  document.getElementById(
+    "fornecedor"
+  ).value =
+    registro.fornecedor;
+
+
+  document.getElementById(
+    "data_envio"
+  ).value =
+    dataParaInput(
+      registro.data_envio
+    );
+
+
+  document.getElementById(
+    "valor"
+  ).value =
+    registro.valor;
+
+
+  document.getElementById(
+    "status_coleta"
+  ).value =
+    registro.status_coleta;
+
+
+  document.getElementById(
+    "status_pagamento"
+  ).value =
+    registro.status_pagamento ||
+    "Pendente";
+
+
+  document.getElementById(
+    "valor_pago"
+  ).value =
+    registro.valor_pago ||
+    0;
+
+
+  document.getElementById(
+    "nota_pagamento"
+  ).value =
+    registro.nota_pagamento ||
+    "";
+
+
+  atualizarCamposPagamento();
+
+
+  document.getElementById(
+    "formTitle"
+  ).textContent =
+    "✏️ Editar Registro de Garantia";
+
+
+  document.getElementById(
+    "btnSubmit"
+  ).textContent =
+    "💾 Salvar Alterações";
+
+
+  document.getElementById(
+    "btnCancel"
+  ).style.display =
+    "inline-flex";
+
+
+  window.scrollTo({
+
+    top: 0,
+
+    behavior:
+      "smooth"
+
+  });
+
+}
+
+
+/* =========================================================
+   CANCELAR
+========================================================= */
+
+function cancelarEdicao() {
+
+  limparFormulario();
+
+}
+
+
+function limparFormulario() {
+
+  document
+    .getElementById(
+      "garantiaForm"
+    )
+    .reset();
+
+
+  document.getElementById(
+    "editId"
+  ).value = "";
+
+
+  document.getElementById(
+    "formTitle"
+  ).textContent =
+    "📦 Envio Mercadoria Garantia/Devolução";
+
+
+  document.getElementById(
+    "btnSubmit"
+  ).textContent =
+    "➕ Adicionar ao Relatório";
+
+
+  document.getElementById(
+    "btnCancel"
+  ).style.display =
+    "none";
+
+
+  document.getElementById(
+    "status_coleta"
+  ).value =
+    "Não Coletado";
+
+
+  document.getElementById(
+    "status_pagamento"
+  ).value =
+    "Pendente";
+
+
+  document.getElementById(
+    "valor_pago"
+  ).value =
+    "0.00";
+
+
+  atualizarCamposPagamento();
+
+}
+
+
+/* =========================================================
+   EXCLUIR
+========================================================= */
+
+async function excluirRegistro(id) {
+
+  const registro =
+    registros.find(
+      r =>
+        Number(r.id) ===
+        Number(id)
+    );
+
+
+  if (!registro)
+    return;
+
+
+  const confirmar =
+    confirm(
+
+      `⚠️ ATENÇÃO\n\n` +
+
+      `Você está prestes a excluir o registro:\n\n` +
+
+      `NF: ${registro.numero_nota}\n` +
+
+      `Fornecedor: ${registro.fornecedor}\n` +
+
+      `Valor: ${formatarMoeda(registro.valor)}\n\n` +
+
+      `Esta operação não poderá ser desfeita.\n\n` +
+
+      `Deseja realmente excluir?`
+
+    );
+
+
+  if (!confirmar)
+    return;
+
+
+  mostrarLoading(
+    "Excluindo registro..."
+  );
+
+
+  try {
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from(
+          "registros_garantia"
+        )
+        .delete()
+        .eq(
+          "id",
+          id
+        );
+
+
+    if (error)
+      throw error;
+
+
+    mostrarMensagem(
+      "Registro excluído com sucesso!"
+    );
+
+
+    await carregarRegistros();
+
+    atualizarDatalistFornecedores();
+
+    atualizarCardsResumo();
+
+    filtrarTabela();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    mostrarMensagem(
+      "Erro ao excluir registro: " +
+      error.message,
+      "error"
+    );
+
+
+  } finally {
+
+    esconderLoading();
+
+  }
+
+}
+
+
+/* =========================================================
+   STATUS COLETA
+========================================================= */
+
+async function alternarStatus(id) {
+
+  const registro =
+    registros.find(
+      r =>
+        Number(r.id) ===
+        Number(id)
+    );
+
+
+  if (!registro)
+    return;
+
+
+  const statusAtual =
+    registro.status_coleta ||
+    "Não Coletado";
+
+
+  const novoStatus =
+    statusAtual ===
+    "Coletado"
+
+      ? "Não Coletado"
+
+      : "Coletado";
+
+
+  let mensagem;
+
+
+  if (
+    novoStatus ===
+    "Não Coletado"
+  ) {
+
+    mensagem =
+
+      `⚠️ ATENÇÃO\n\n` +
+
+      `Você está alterando o status de:\n\n` +
+
+      `"Coletado"\n\n` +
+
+      `para:\n\n` +
+
+      `"Não Coletado"\n\n` +
+
+      `NF: ${registro.numero_nota}\n` +
+
+      `Fornecedor: ${registro.fornecedor}\n\n` +
+
+      `Deseja realmente realizar esta alteração?`;
+
+  } else {
+
+    mensagem =
+
+      `⚠️ ATENÇÃO\n\n` +
+
+      `Você está alterando o status de:\n\n` +
+
+      `"Não Coletado"\n\n` +
+
+      `para:\n\n` +
+
+      `"Coletado"\n\n` +
+
+      `NF: ${registro.numero_nota}\n` +
+
+      `Fornecedor: ${registro.fornecedor}\n\n` +
+
+      `Confirma que a mercadoria foi coletada?`;
+
+  }
+
+
+  if (
+    !confirm(mensagem)
+  )
+    return;
+
+
+  mostrarLoading(
+    "Atualizando status..."
+  );
+
+
+  try {
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from(
+          "registros_garantia"
+        )
+        .update({
+
+          status_coleta:
+            novoStatus
+
+        })
+        .eq(
+          "id",
+          id
+        );
+
+
+    if (error)
+      throw error;
+
+
+    mostrarMensagem(
+      `Status alterado para "${novoStatus}".`
+    );
+
+
+    await carregarRegistros();
+
+    atualizarCardsResumo();
+
+    filtrarTabela();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    mostrarMensagem(
+      "Erro ao alterar status: " +
+      error.message,
+      "error"
+    );
+
+
+  } finally {
+
+    esconderLoading();
+
+  }
+
+}
+
+
+/* =========================================================
+   FILTROS
+========================================================= */
+
+function obterRegistrosFiltrados() {
+
+  const filtroMes =
+    document.getElementById(
+      "filtroMes"
+    ).value;
+
+
+  const filtroStatus =
+    document.getElementById(
+      "filtroStatus"
+    ).value;
+
+
+  const filtroPagamento =
+    document.getElementById(
+      "filtroPagamento"
+    ).value;
+
+
+  const filtroGeral =
+    document.getElementById(
+      "filtroGeral"
+    ).value
+      .toLowerCase()
+      .trim();
+
+
+  const filtrados =
+    registros.filter(
+      r => {
+
+        const matchMes =
+          !filtroMes ||
+          r.mes === filtroMes;
+
+
+        const matchStatus =
+          !filtroStatus ||
+          r.status_coleta ===
+          filtroStatus;
+
+
+        const matchPagamento =
+          !filtroPagamento ||
+          r.status_pagamento ===
+          filtroPagamento;
+
+
+        const fornecedor =
+          String(
+            r.fornecedor || ""
+          )
+            .toLowerCase();
+
+
+        const numeroNota =
+          String(
+            r.numero_nota || ""
+          )
+            .toLowerCase();
+
+
+        const observacoes =
+          String(
+            r.nota_pagamento || ""
+          )
+            .toLowerCase();
+
+
+        const matchGeral =
+          !filtroGeral ||
+
+          fornecedor.includes(
+            filtroGeral
+          ) ||
+
+          numeroNota.includes(
+            filtroGeral
+          ) ||
+
+          observacoes.includes(
+            filtroGeral
+          );
+
+
+        return (
+
+          matchMes &&
+
+          matchStatus &&
+
+          matchPagamento &&
+
+          matchGeral
+
+        );
+
+      }
+    );
+
+
+  return ordenarPorMesEDia(
+    filtrados
+  );
+
+}
+
+
+/* =========================================================
+   TABELA
+========================================================= */
+
+function filtrarTabela() {
+
+  const tbody =
+    document.getElementById(
+      "tabelaBody"
+    );
+
+
+  tbody.innerHTML =
+    "";
+
+
+  const filtrados =
+    obterRegistrosFiltrados();
+
+
+  if (
+    filtrados.length === 0
+  ) {
+
+    const tr =
+      document.createElement(
+        "tr"
+      );
+
+
+    tr.innerHTML = `
+
+      <td
+        colspan="10"
+        class="empty-message"
+      >
+        Nenhum registro encontrado.
+      </td>
+
+    `;
+
+
+    tbody.appendChild(
+      tr
+    );
+
+
+    return;
+
+  }
+
+
+  filtrados.forEach(
+    registro => {
+
+      const tr =
+        document.createElement(
+          "tr"
+        );
+
+
+      const valorTotal =
+        Number(
+          registro.valor || 0
+        );
+
+
+      const valorPago =
+        Number(
+          registro.valor_pago ||
+          0
+        );
+
+
+      const saldo =
+        valorTotal -
+        valorPago;
+
+
+      let classePagamento =
+        "badge-pendente";
+
+
+      if (
+        registro.status_pagamento ===
+        "Pago Total"
+      ) {
+
+        classePagamento =
+          "badge-pago";
+
+      } else if (
+        registro.status_pagamento ===
+        "Pago Parcial"
+      ) {
+
+        classePagamento =
+          "badge-parcial";
+
+      }
+
+
+      const coletado =
+        registro.status_coleta ===
+        "Coletado";
+
+
+      const observacoes =
+        registro.nota_pagamento ||
+        "—";
+
+
+      tr.innerHTML = `
+
+        <td>
+          ${escaparHTML(
+            registro.mes
+          )}
+        </td>
+
+        <td>
+          <strong>
+            ${escaparHTML(
+              registro.numero_nota
+            )}
+          </strong>
+        </td>
+
+        <td>
+          ${escaparHTML(
+            registro.fornecedor
+          )}
+        </td>
+
+        <td>
+          ${formatarDataBR(
+            registro.data_envio
+          )}
+        </td>
+
+        <td>
+          <strong>
+            ${formatarMoeda(
+              valorTotal
+            )}
+          </strong>
+        </td>
+
+        <td>
+
+          ${formatarMoeda(
+            valorPago
+          )}
+
+          <br>
+
+          <span
+            class="badge ${classePagamento}"
+          >
+            ${escaparHTML(
+              registro.status_pagamento ||
+              "Pendente"
+            )}
+          </span>
+
+        </td>
+
+        <td>
+          ${escaparHTML(
+            observacoes
+          )}
+        </td>
+
+        <td>
+
+          <span class="${
+            saldo > 0
+              ? "saldo-text"
+              : ""
+          }">
+
+            ${formatarMoeda(
+              saldo
+            )}
+
+          </span>
+
+        </td>
+
+        <td>
+
+          <button
+            type="button"
+            class="btn-status ${
+              coletado
+                ? "status-coletado"
+                : "status-nao-coletado"
+            }"
+            onclick="alternarStatus(${registro.id})"
+            title="Alterar status da coleta"
+          >
+
+            ${
+              coletado
+                ? "✓ Coletado"
+                : "⏳ Não Coletado"
+            }
+
+          </button>
+
+        </td>
+
+
+        <td class="acoes no-print">
+
+          <button
+            type="button"
+            class="btn-action btn-edit"
+            onclick="prepararEdicao(${registro.id})"
+            title="Editar registro"
+            aria-label="Editar registro"
+          >
+            ✏️
+          </button>
+
+
+          <button
+            type="button"
+            class="btn-action btn-delete"
+            onclick="excluirRegistro(${registro.id})"
+            title="Excluir registro"
+            aria-label="Excluir registro"
+          >
+            🗑️
+          </button>
+
+        </td>
+
+      `;
+
+
+      tbody.appendChild(
+        tr
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   KPI
+========================================================= */
+
+function atualizarCardsResumo() {
+
+  const totalRegistros =
+    registros.length;
+
+
+  const totalValor =
+    registros.reduce(
+      (
+        soma,
+        r
+      ) =>
+        soma +
+        Number(
+          r.valor || 0
+        ),
+      0
+    );
+
+
+  const totalPago =
+    registros.reduce(
+      (
+        soma,
+        r
+      ) =>
+        soma +
+        Number(
+          r.valor_pago || 0
+        ),
+      0
+    );
+
+
+  const totalSaldo =
+    totalValor -
+    totalPago;
+
+
+  const coletados =
+    registros.filter(
+      r =>
+        r.status_coleta ===
+        "Coletado"
+    );
+
+
+  const naoColetados =
+    registros.filter(
+      r =>
+        r.status_coleta ===
+        "Não Coletado"
+    );
+
+
+  const valorColetado =
+    coletados.reduce(
+      (
+        soma,
+        r
+      ) =>
+        soma +
+        Number(
+          r.valor || 0
+        ),
+      0
+    );
+
+
+  const valorNaoColetado =
+    naoColetados.reduce(
+      (
+        soma,
+        r
+      ) =>
+        soma +
+        Number(
+          r.valor || 0
+        ),
+      0
+    );
+
+
+  document.getElementById(
+    "kpiTotalValor"
+  ).textContent =
+    formatarMoeda(
+      totalValor
+    );
+
+
+  document.getElementById(
+    "kpiTotalQtd"
+  ).textContent =
+    `${totalRegistros} registro${
+      totalRegistros !== 1
+        ? "s"
+        : ""
+    }`;
+
+
+  document.getElementById(
+    "kpiTotalPago"
+  ).textContent =
+    formatarMoeda(
+      totalPago
+    );
+
+
+  document.getElementById(
+    "kpiTotalSaldo"
+  ).textContent =
+    formatarMoeda(
+      totalSaldo
+    );
+
+
+  document.getElementById(
+    "kpiColetadoValor"
+  ).textContent =
+    formatarMoeda(
+      valorColetado
+    );
+
+
+  document.getElementById(
+    "kpiColetadoQtd"
+  ).textContent =
+    `${coletados.length} ${
+      coletados.length === 1
+        ? "item"
+        : "itens"
+    }`;
+
+
+  document.getElementById(
+    "kpiNaoColetadoValor"
+  ).textContent =
+    formatarMoeda(
+      valorNaoColetado
+    );
+
+
+  document.getElementById(
+    "kpiNaoColetadoQtd"
+  ).textContent =
+    `${naoColetados.length} ${
+      naoColetados.length === 1
+        ? "item"
+        : "itens"
+    }`;
+
+}
+
+
+/* =========================================================
+   FORNECEDORES
+========================================================= */
+
+function atualizarDatalistFornecedores() {
+
+  const datalist =
+    document.getElementById(
+      "listaFornecedores"
+    );
+
+
+  datalist.innerHTML =
+    "";
+
+
+  const fornecedores =
+    [
+      ...new Set(
+        registros
+          .map(
+            r =>
+              r.fornecedor
+          )
+          .filter(Boolean)
+      )
+    ]
+      .sort(
+        (a,b) =>
+          a.localeCompare(
+            b,
+            "pt-BR"
+          )
+      );
+
+
+  fornecedores.forEach(
+    fornecedor => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        fornecedor;
+
+
+      datalist.appendChild(
+        option
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   EXPORTAR EXCEL
+========================================================= */
+
+function exportarExcel() {
+
+  const dados =
+    obterRegistrosFiltrados();
+
+
+  if (!dados.length) {
+
+    alert(
+      "Não existem registros para exportar."
+    );
+
+    return;
+
+  }
+
+
+  const dadosExcel =
+    dados.map(
+      r => {
+
+        const total =
+          Number(
+            r.valor || 0
+          );
+
+
+        const pago =
+          Number(
+            r.valor_pago || 0
+          );
+
+
+        return {
+
+          "Mês":
+            r.mes,
+
+          "Nº Nota Fiscal":
+            r.numero_nota,
+
+          "Fornecedor":
+            r.fornecedor,
+
+          "Data de Processamento":
+            formatarDataBR(
+              r.data_envio
+            ),
+
+          "Valor Total (R$)":
+            total,
+
+          "Status Pagamento":
+            r.status_pagamento,
+
+          "Valor Pago (R$)":
+            pago,
+
+          "Observações em Geral":
+            r.nota_pagamento || "",
+
+          "Saldo Pendente (R$)":
+            total - pago,
+
+          "Status Coleta":
+            r.status_coleta
+
+        };
+
+      }
+    );
+
+
+  const worksheet =
+    XLSX.utils.json_to_sheet(
+      dadosExcel
+    );
+
+
+  worksheet["!cols"] = [
+
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 28 },
+    { wch: 22 },
+    { wch: 18 },
+    { wch: 20 },
+    { wch: 18 },
+    { wch: 35 },
+    { wch: 20 },
+    { wch: 20 }
+
+  ];
+
+
+  const workbook =
+    XLSX.utils.book_new();
+
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    "Garantias"
+  );
+
+
+  XLSX.writeFile(
+    workbook,
+    "relatorio_garantias.xlsx"
+  );
+
+}
+
+
+/* =========================================================
+   EXPORTAR PDF
+========================================================= */
+
+function exportarPDF() {
+
+  const dados =
+    obterRegistrosFiltrados();
+
+
+  if (!dados.length) {
+
+    alert(
+      "Não existem registros para exportar."
+    );
+
+    return;
+
+  }
+
+
+  const {
+    jsPDF
+  } = window.jspdf;
+
+
+  const doc =
+    new jsPDF(
+      "landscape",
+      "mm",
+      "a4"
+    );
+
+
+  doc.setFontSize(
+    16
+  );
+
+
+  doc.text(
+    "Relatório de Controle de Garantia e Devolução",
+    14,
+    15
+  );
+
+
+  doc.setFontSize(
+    9
+  );
+
+
+  doc.text(
+    `Gerado em: ${
+      new Date()
+        .toLocaleString(
+          "pt-BR"
+        )
+    }`,
+    14,
+    21
+  );
+
+
+  const colunas = [
+
+    "Mês",
+    "Nº NF",
+    "Fornecedor",
+    "Processamento",
+    "Valor",
+    "Pagamento",
+    "Pago",
+    "Observações",
+    "Saldo",
+    "Coleta"
+
+  ];
+
+
+  const linhas =
+    dados.map(
+      r => {
+
+        const total =
+          Number(
+            r.valor || 0
+          );
+
+
+        const pago =
+          Number(
+            r.valor_pago || 0
+          );
+
+
+        return [
+
+          r.mes,
+
+          r.numero_nota,
+
+          r.fornecedor,
+
+          formatarDataBR(
+            r.data_envio
+          ),
+
+          formatarMoeda(
+            total
+          ),
+
+          r.status_pagamento ||
+            "Pendente",
+
+          formatarMoeda(
+            pago
+          ),
+
+          r.nota_pagamento ||
+            "-",
+
+          formatarMoeda(
+            total - pago
+          ),
+
+          r.status_coleta
+
+        ];
+
+      }
+    );
+
+
+  doc.autoTable({
+
+    head: [
+      colunas
+    ],
+
+    body:
+      linhas,
+
+    startY: 27,
+
+    theme:
+      "striped",
+
+    styles: {
+
+      fontSize: 7,
+
+      cellPadding: 2
+
+    },
+
+    headStyles: {
+
+      fillColor:
+        [49,130,206],
+
+      textColor:
+        255,
+
+      fontStyle:
+        "bold"
+
+    },
+
+    alternateRowStyles: {
+
+      fillColor:
+        [248,250,252]
+
+    }
+
+  });
+
+
+  doc.save(
+    "relatorio_garantias.pdf"
+  );
+
+}
+
+
+/* =========================================================
+   DASHBOARD - NOVA GUIA
+========================================================= */
+
+function abrirDashboard() {
+
+  if (
+    !registros.length
+  ) {
+
+    mostrarMensagem(
+      "Não existem registros para exibir no dashboard.",
+      "info"
+    );
+
+    return;
+
+  }
+
+
+  /*
+     Criamos uma página HTML independente
+     em uma nova guia.
+
+     Os dados são somente copiados para o
+     dashboard. Nenhum campo do Supabase
+     é alterado.
+  */
+
+  const dadosSeguros =
+    JSON.stringify(
+      registros
+    )
+      .replace(
+        /</g,
+        "\\u003c"
+      )
+      .replace(
+        />/g,
+        "\\u003e"
+      )
+      .replace(
+        /&/g,
+        "\\u0026"
+      );
+
+
+  const dashboardHTML = `
+
+<!DOCTYPE html>
+
+<html
+  lang="pt-BR"
+>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+  Dashboard - Garantias
+</title>
+
+
+<script
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+><\/script>
+
+
+<style>
+
+* {
+
+  box-sizing:
+    border-box;
+
+  margin:
+    0;
+
+  padding:
+    0;
+
+}
+
+
+body {
+
+  font-family:
+    "Segoe UI",
+    Tahoma,
+    Geneva,
+    Verdana,
+    sans-serif;
+
+  background:
+    linear-gradient(
+      135deg,
+      #eef2ff,
+      #f8fafc 45%,
+      #ecfeff
+    );
+
+  color:
+    #1e293b;
+
+  min-height:
+    100vh;
+
+  padding:
+    20px;
+}
+
+
+.dashboard {
+
+  max-width:
+    1450px;
+
+  margin:
+    auto;
+}
+
+
+.header {
+
+  background:
+    linear-gradient(
+      135deg,
+      #1e3a8a,
+      #4f46e5,
+      #7c3aed
+    );
+
+  color:
+    white;
+
+  border-radius:
+    24px;
+
+  padding:
+    28px;
+
+  margin-bottom:
+    20px;
+
+  box-shadow:
+    0 15px 40px
+    rgba(79,70,229,.25);
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+}
+
+
+.header::after {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  width:
+    250px;
+
+  height:
+    250px;
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(255,255,255,.10);
+
+  right:
+    -70px;
+
+  top:
+    -100px;
+}
+
+
+.header h1 {
+
+  font-size:
+    clamp(1.5rem,3vw,2.3rem);
+
+  margin-bottom:
+    7px;
+
+  position:
+    relative;
+
+  z-index:
+    2;
+}
+
+
+.header p {
+
+  opacity:
+    .85;
+
+  position:
+    relative;
+
+  z-index:
+    2;
+}
+
+
+.filters {
+
+  background:
+    rgba(255,255,255,.9);
+
+  backdrop-filter:
+    blur(12px);
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius:
+    18px;
+
+  padding:
+    16px;
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:
+    12px;
+
+  margin-bottom:
+    20px;
+
+  box-shadow:
+    0 5px 20px
+    rgba(15,23,42,.06);
+}
+
+
+.filters label {
+
+  display:
+    block;
+
+  font-size:
+    .75rem;
+
+  font-weight:
+    800;
+
+  color:
+    #64748b;
+
+  margin-bottom:
+    6px;
+
+  text-transform:
+    uppercase;
+}
+
+
+.filters select {
+
+  width:
+    100%;
+
+  border:
+    1px solid
+    #cbd5e1;
+
+  border-radius:
+    10px;
+
+  padding:
+    10px;
+
+  background:
+    white;
+
+  outline:
+    none;
+}
+
+
+.cards {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(5,1fr);
+
+  gap:
+    14px;
+
+  margin-bottom:
+    20px;
+}
+
+
+.metric {
+
+  background:
+    rgba(255,255,255,.95);
+
+  border-radius:
+    18px;
+
+  padding:
+    18px;
+
+  box-shadow:
+    0 8px 25px
+    rgba(15,23,42,.07);
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+}
+
+
+.metric::before {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  left:
+    0;
+
+  top:
+    0;
+
+  width:
+    100%;
+
+  height:
+    4px;
+
+  background:
+    var(--color);
+}
+
+
+.metric-icon {
+
+  font-size:
+    1.8rem;
+
+  margin-bottom:
+    8px;
+}
+
+
+.metric-title {
+
+  color:
+    #64748b;
+
+  font-size:
+    .72rem;
+
+  font-weight:
+    800;
+
+  text-transform:
+    uppercase;
+}
+
+
+.metric-value {
+
+  font-size:
+    clamp(1.05rem,2vw,1.45rem);
+
+  font-weight:
+    900;
+
+  margin-top:
+    6px;
+
+  color:
+    #0f172a;
+}
+
+
+.chart-grid {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(2,minmax(0,1fr));
+
+  gap:
+    18px;
+}
+
+
+.chart-card {
+
+  background:
+    rgba(255,255,255,.96);
+
+  border:
+    1px solid
+    #e2e8f0;
+
+  border-radius:
+    20px;
+
+  padding:
+    18px;
+
+  box-shadow:
+    0 8px 25px
+    rgba(15,23,42,.06);
+
+  min-height:
+    390px;
+}
+
+
+.chart-card.large {
+
+  grid-column:
+    span 2;
+}
+
+
+.chart-title {
+
+  font-size:
+    1rem;
+
+  font-weight:
+    850;
+
+  margin-bottom:
+    14px;
+
+  color:
+    #1e293b;
+}
+
+
+.chart-wrapper {
+
+  position:
+    relative;
+
+  width:
+    100%;
+
+  height:
+    315px;
+}
+
+
+.footer {
+
+  text-align:
+    center;
+
+  color:
+    #94a3b8;
+
+  font-size:
+    .78rem;
+
+  padding:
+    25px 0;
+}
+
+
+@media(max-width:1100px) {
+
+  .cards {
+
+    grid-template-columns:
+      repeat(3,1fr);
+
+  }
+
+}
+
+
+@media(max-width:850px) {
+
+  .chart-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .chart-card.large {
+
+    grid-column:
+      span 1;
+
+  }
+
+
+  .filters {
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+}
+
+
+@media(max-width:600px) {
+
+  body {
+
+    padding:
+      10px;
+
+  }
+
+
+  .header {
+
+    padding:
+      20px;
+
+    border-radius:
+      18px;
+
+  }
+
+
+  .cards {
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .filters {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .chart-card {
+
+    min-height:
+      350px;
+
+    padding:
+      14px;
+
+  }
+
+
+  .chart-wrapper {
+
+    height:
+      280px;
+
+  }
+
+}
+
+
+@media(max-width:400px) {
+
+  .cards {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="dashboard">
+
+
+  <div class="header">
+
+    <h1>
+      📊 Dashboard de Garantias
+    </h1>
+
+    <p>
+      Visão geral de processamento,
+      pagamentos, coletas e fornecedores
+    </p>
+
+  </div>
+
+
+  <div class="filters">
+
+    <div>
+
+      <label>
+        Filtrar por mês
+      </label>
+
+      <select id="filtroDashMes">
+
+        <option value="">
+          Todos os meses
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div>
+
+      <label>
+        Filtrar por fornecedor
+      </label>
+
+      <select id="filtroDashFornecedor">
+
+        <option value="">
+          Todos os fornecedores
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div>
+
+      <label>
+        Atualização
+      </label>
+
+      <select id="filtroDashStatus">
+
+        <option value="">
+          Todos os registros
+        </option>
+
+        <option value="coletado">
+          Somente coletados
+        </option>
+
+        <option value="nao-coletado">
+          Somente não coletados
+        </option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+
+  <div class="cards">
+
+
+    <div
+      class="metric"
+      style="--color:#3b82f6"
+    >
+
+      <div class="metric-icon">
+        📦
+      </div>
+
+      <div class="metric-title">
+        Registros
+      </div>
+
+      <div
+        class="metric-value"
+        id="mQtd"
+      >
+        0
+      </div>
+
+    </div>
+
+
+    <div
+      class="metric"
+      style="--color:#10b981"
+    >
+
+      <div class="metric-icon">
+        💰
+      </div>
+
+      <div class="metric-title">
+        Valor Total
+      </div>
+
+      <div
+        class="metric-value"
+        id="mTotal"
+      >
+        R$ 0,00
+      </div>
+
+    </div>
+
+
+    <div
+      class="metric"
+      style="--color:#22c55e"
+    >
+
+      <div class="metric-icon">
+        💵
+      </div>
+
+      <div class="metric-title">
+        Total Pago
+      </div>
+
+      <div
+        class="metric-value"
+        id="mPago"
+      >
+        R$ 0,00
+      </div>
+
+    </div>
+
+
+    <div
+      class="metric"
+      style="--color:#f97316"
+    >
+
+      <div class="metric-icon">
+        ⏳
+      </div>
+
+      <div class="metric-title">
+        Saldo Pendente
+      </div>
+
+      <div
+        class="metric-value"
+        id="mSaldo"
+      >
+        R$ 0,00
+      </div>
+
+    </div>
+
+
+    <div
+      class="metric"
+      style="--color:#8b5cf6"
+    >
+
+      <div class="metric-icon">
+        🚚
+      </div>
+
+      <div class="metric-title">
+        Coleta
+      </div>
+
+      <div
+        class="metric-value"
+        id="mColeta"
+      >
+        0%
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="chart-grid">
+
+
+    <div class="chart-card large">
+
+      <div class="chart-title">
+        💰 Valores por mês
+      </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          id="chartMes"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+
+    <div class="chart-card">
+
+      <div class="chart-title">
+        💳 Situação dos pagamentos
+      </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          id="chartPagamento"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+
+    <div class="chart-card">
+
+      <div class="chart-title">
+        🚚 Situação das coletas
+      </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          id="chartColeta"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+
+    <div class="chart-card large">
+
+      <div class="chart-title">
+        🏢 Valores por fornecedor
+      </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          id="chartFornecedor"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+
+    <div class="chart-card large">
+
+      <div class="chart-title">
+        📈 Valor pago x saldo pendente
+      </div>
+
+      <div class="chart-wrapper">
+
+        <canvas
+          id="chartFinanceiro"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="footer">
+
+    Dashboard atualizado a partir
+    dos registros atuais do sistema.
+
+  </div>
+
+</div>
+
+
+<script>
+
+const registros =
+  JSON.parse(
+    '${dadosSeguros}'
+  );
+
+
+const meses = [
+
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro"
+
+];
+
+
+const ordemMeses = {
+
+  Janeiro: 1,
+  Fevereiro: 2,
+  Março: 3,
+  Abril: 4,
+  Maio: 5,
+  Junho: 6,
+  Julho: 7,
+  Agosto: 8,
+  Setembro: 9,
+  Outubro: 10,
+  Novembro: 11,
+  Dezembro: 12
+
+};
+
+
+const moeda = valor =>
+  Number(
+    valor || 0
+  ).toLocaleString(
+    "pt-BR",
+    {
+      style:
+        "currency",
+      currency:
+        "BRL"
+    }
+  );
+
+
+const filtroMes =
+  document.getElementById(
+    "filtroDashMes"
+  );
+
+
+const filtroFornecedor =
+  document.getElementById(
+    "filtroDashFornecedor"
+  );
+
+
+const filtroStatus =
+  document.getElementById(
+    "filtroDashStatus"
+  );
+
+
+let chartMes;
+let chartPagamento;
+let chartColeta;
+let chartFornecedor;
+let chartFinanceiro;
+
+
+/* =====================================================
+   PREENCHER FILTROS
+===================================================== */
+
+meses.forEach(
+  mes => {
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      mes;
+
+    option.textContent =
+      mes;
+
+    filtroMes.appendChild(
+      option
+    );
+
+  }
+);
+
+
+[
+  ...new Set(
+    registros
+      .map(
+        r =>
+          r.fornecedor
+      )
+      .filter(Boolean)
+  )
+]
+.sort(
+  (a,b) =>
+    a.localeCompare(
+      b,
+      "pt-BR"
+    )
+)
+.forEach(
+  fornecedor => {
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      fornecedor;
+
+    option.textContent =
+      fornecedor;
+
+    filtroFornecedor.appendChild(
+      option
+    );
+
+  }
+);
+
+
+/* =====================================================
+   FILTRAR
+===================================================== */
+
+function obterDados() {
+
+  return registros.filter(
+    r => {
+
+      const mesOK =
+        !filtroMes.value ||
+        r.mes ===
+        filtroMes.value;
+
+
+      const fornecedorOK =
+        !filtroFornecedor.value ||
+        r.fornecedor ===
+        filtroFornecedor.value;
+
+
+      const statusOK =
+        !filtroStatus.value ||
+
+        (
+          filtroStatus.value ===
+          "coletado" &&
+          r.status_coleta ===
+          "Coletado"
+        ) ||
+
+        (
+          filtroStatus.value ===
+          "nao-coletado" &&
+          r.status_coleta ===
+          "Não Coletado"
+        );
+
+
+      return (
+        mesOK &&
+        fornecedorOK &&
+        statusOK
+      );
+
+    }
+  );
+
+}
+
+
+/* =====================================================
+   GRADIENTE
+===================================================== */
+
+function gradiente(
+  ctx,
+  cor1,
+  cor2
+) {
+
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      320
+    );
+
+  gradient.addColorStop(
+    0,
+    cor1
+  );
+
+  gradient.addColorStop(
+    1,
+    cor2
+  );
+
+  return gradient;
+
+}
+
+
+/* =====================================================
+   ATUALIZAR DASHBOARD
+===================================================== */
+
+function atualizarDashboard() {
+
+  const dados =
+    obterDados();
+
+
+  const total =
+    dados.reduce(
+      (s,r) =>
+        s +
+        Number(
+          r.valor || 0
+        ),
+      0
+    );
+
+
+  const pago =
+    dados.reduce(
+      (s,r) =>
+        s +
+        Number(
+          r.valor_pago || 0
+        ),
+      0
+    );
+
+
+  const saldo =
+    total -
+    pago;
+
+
+  const coletados =
+    dados.filter(
+      r =>
+        r.status_coleta ===
+        "Coletado"
+    ).length;
+
+
+  document.getElementById(
+    "mQtd"
+  ).textContent =
+    dados.length;
+
+
+  document.getElementById(
+    "mTotal"
+  ).textContent =
+    moeda(total);
+
+
+  document.getElementById(
+    "mPago"
+  ).textContent =
+    moeda(pago);
+
+
+  document.getElementById(
+    "mSaldo"
+  ).textContent =
+    moeda(saldo);
+
+
+  document.getElementById(
+    "mColeta"
+  ).textContent =
+    dados.length
+      ? (
+          coletados /
+          dados.length *
+          100
+        ).toFixed(0) +
+        "%"
+      : "0%";
+
+
+  criarGraficos(
+    dados
+  );
+
+}
+
+
+/* =====================================================
+   CRIAR GRÁFICOS
+===================================================== */
+
+function criarGraficos(
+  dados
+) {
+
+
+  if (chartMes)
+    chartMes.destroy();
+
+  if (chartPagamento)
+    chartPagamento.destroy();
+
+  if (chartColeta)
+    chartColeta.destroy();
+
+  if (chartFornecedor)
+    chartFornecedor.destroy();
+
+  if (chartFinanceiro)
+    chartFinanceiro.destroy();
+
+
+  /* ===================================================
+     MÊS
+  ================================================== */
+
+  const porMes = {};
+
+  meses.forEach(
+    mes => {
+
+      porMes[mes] = {
+        total: 0,
+        pago: 0,
+        saldo: 0
+      };
+
+    }
+  );
+
+
+  dados.forEach(
+    r => {
+
+      if (
+        !porMes[r.mes]
+      )
+        return;
+
+
+      const total =
+        Number(
+          r.valor || 0
+        );
+
+
+      const pago =
+        Number(
+          r.valor_pago || 0
+        );
+
+
+      porMes[r.mes].total +=
+        total;
+
+      porMes[r.mes].pago +=
+        pago;
+
+      porMes[r.mes].saldo +=
+        total - pago;
+
+    }
+  );
+
+
+  const ctxMes =
+    document.getElementById(
+      "chartMes"
+    ).getContext(
+      "2d"
+    );
+
+
+  chartMes =
+    new Chart(
+      ctxMes,
+      {
+
+        type:
+          "bar",
+
+        data: {
+
+          labels:
+            meses,
+
+          datasets: [
+
+            {
+
+              label:
+                "Valor Total",
+
+              data:
+                meses.map(
+                  m =>
+                    porMes[m].total
+                ),
+
+              backgroundColor:
+                gradiente(
+                  ctxMes,
+                  "#60a5fa",
+                  "#2563eb"
+                ),
+
+              borderRadius:
+                8,
+
+              borderSkipped:
+                false
+
+            },
+
+            {
+
+              label:
+                "Pago",
+
+              data:
+                meses.map(
+                  m =>
+                    porMes[m].pago
+                ),
+
+              backgroundColor:
+                gradiente(
+                  ctxMes,
+                  "#4ade80",
+                  "#16a34a"
+                ),
+
+              borderRadius:
+                8,
+
+              borderSkipped:
+                false
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          responsive:
+            true,
+
+          maintainAspectRatio:
+            false,
+
+          interaction: {
+
+            mode:
+              "index",
+
+            intersect:
+              false
+
+          },
+
+          plugins: {
+
+            legend: {
+
+              position:
+                "bottom"
+
+            },
+
+            tooltip: {
+
+              callbacks: {
+
+                label:
+                  context =>
+                    context.dataset.label +
+                    ": " +
+                    moeda(
+                      context.raw
+                    )
+
+              }
+
+            }
+
+          },
+
+          scales: {
+
+            y: {
+
+              beginAtZero:
+                true,
+
+              ticks: {
+
+                callback:
+                  value =>
+                    moeda(value)
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+    );
+
+
+  /* ===================================================
+     PAGAMENTO
+  ================================================== */
+
+  const pagamentos = {
+
+    Pendente: 0,
+    "Pago Parcial": 0,
+    "Pago Total": 0
+
+  };
+
+
+  dados.forEach(
+    r => {
+
+      const status =
+        r.status_pagamento ||
+        "Pendente";
+
+      pagamentos[status] =
+        (
+          pagamentos[status] ||
+          0
+        ) +
+        Number(
+          r.valor || 0
+        );
+
+    }
+  );
+
+
+  const ctxPagamento =
+    document.getElementById(
+      "chartPagamento"
+    ).getContext(
+      "2d"
+    );
+
+
+  chartPagamento =
+    new Chart(
+      ctxPagamento,
+      {
+
+        type:
+          "doughnut",
+
+        data: {
+
+          labels: [
+
+            "Pendente",
+            "Pago Parcial",
+            "Pago Total"
+
+          ],
+
+          datasets: [
+
+            {
+
+              data: [
+
+                pagamentos.Pendente,
+
+                pagamentos[
+                  "Pago Parcial"
+                ],
+
+                pagamentos[
+                  "Pago Total"
+                ]
+
+              ],
+
+              backgroundColor: [
+
+                "#ef4444",
+                "#f59e0b",
+                "#22c55e"
+
+              ],
+
+              borderWidth:
+                0,
+
+              hoverOffset:
+                10
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          responsive:
+            true,
+
+          maintainAspectRatio:
+            false,
+
+          cutout:
+            "65%",
+
+          plugins: {
+
+            legend: {
+
+              position:
+                "bottom"
+
+            },
+
+            tooltip: {
+
+              callbacks: {
+
+                label:
+                  context =>
+                    context.label +
+                    ": " +
+                    moeda(
+                      context.raw
+                    )
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+    );
+
+
+  /* ===================================================
+     COLETA
+  ================================================== */
+
+  const coletados =
+    dados.filter(
+      r =>
+        r.status_coleta ===
+        "Coletado"
+    ).length;
+
+
+  const naoColetados =
+    dados.length -
+    coletados;
+
+
+  const ctxColeta =
+    document.getElementById(
+      "chartColeta"
+    ).getContext(
+      "2d"
+    );
+
+
+  chartColeta =
+    new Chart(
+      ctxColeta,
+      {
+
+        type:
+          "doughnut",
+
+        data: {
+
+          labels: [
+
+            "Coletado",
+            "Não Coletado"
+
+          ],
+
+          datasets: [
+
+            {
+
+              data: [
+
+                coletados,
+                naoColetados
+
+              ],
+
+              backgroundColor: [
+
+                "#14b8a6",
+                "#ef4444"
+
+              ],
+
+              borderWidth:
+                0,
+
+              hoverOffset:
+                10
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          responsive:
+            true,
+
+          maintainAspectRatio:
+            false,
+
+          cutout:
+            "65%",
+
+          plugins: {
+
+            legend: {
+
+              position:
+                "bottom"
+
+            }
+
+          }
+
+        }
+
+      }
+    );
+
+
+  /* ===================================================
+     FORNECEDORES
+  ================================================== */
+
+  const fornecedores = {};
+
+
+  dados.forEach(
+    r => {
+
+      const nome =
+        r.fornecedor ||
+        "Sem fornecedor";
+
+
+      fornecedores[nome] =
+        (
+          fornecedores[nome] ||
+          0
+        ) +
+        Number(
+          r.valor || 0
+        );
+
+    }
+  );
+
+
+  const fornecedoresOrdenados =
+    Object.entries(
+      fornecedores
+    )
+    .sort(
+      (a,b) =>
+        b[1] -
+        a[1]
+    );
+
+
+  const ctxFornecedor =
+    document.getElementById(
+      "chartFornecedor"
+    ).getContext(
+      "2d"
+    );
+
+
+  chartFornecedor =
+    new Chart(
+      ctxFornecedor,
+      {
+
+        type:
+          "bar",
+
+        data: {
+
+          labels:
+            fornecedoresOrdenados
+              .map(
+                x =>
+                  x[0]
+              ),
+
+          datasets: [
+
+            {
+
+              label:
+                "Valor",
+
+              data:
+                fornecedoresOrdenados
+                  .map(
+                    x =>
+                      x[1]
+                  ),
+
+              backgroundColor:
+                gradiente(
+                  ctxFornecedor,
+                  "#a78bfa",
+                  "#7c3aed"
+                ),
+
+              borderRadius:
+                8,
+
+              borderSkipped:
+                false
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          indexAxis:
+            "y",
+
+          responsive:
+            true,
+
+          maintainAspectRatio:
+            false,
+
+          plugins: {
+
+            legend: {
+
+              display:
+                false
+
+            },
+
+            tooltip: {
+
+              callbacks: {
+
+                label:
+                  context =>
+                    moeda(
+                      context.raw
+                    )
+
+              }
+
+            }
+
+          },
+
+          scales: {
+
+            x: {
+
+              beginAtZero:
+                true,
+
+              ticks: {
+
+                callback:
+                  value =>
+                    moeda(value)
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+    );
+
+
+  /* ===================================================
+     FINANCEIRO
+  ================================================== */
+
+  const ctxFinanceiro =
+    document.getElementById(
+      "chartFinanceiro"
+    ).getContext(
+      "2d"
+    );
+
+
+  chartFinanceiro =
+    new Chart(
+      ctxFinanceiro,
+      {
+
+        type:
+          "bar",
+
+        data: {
+
+          labels: [
+
+            "Financeiro"
+
+          ],
+
+          datasets: [
+
+            {
+
+              label:
+                "Pago",
+
+              data: [
+                pago
+              ],
+
+              backgroundColor:
+                "#22c55e",
+
+              borderRadius:
+                10
+
+            },
+
+            {
+
+              label:
+                "Saldo Pendente",
+
+              data: [
+                saldo
+              ],
+
+              backgroundColor:
+                "#f97316",
+
+              borderRadius:
+                10
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          responsive:
+            true,
+
+          maintainAspectRatio:
+            false,
+
+          plugins: {
+
+            legend: {
+
+              position:
+                "bottom"
+
+            },
+
+            tooltip: {
+
+              callbacks: {
+
+                label:
+                  context =>
+                    context.dataset.label +
+                    ": " +
+                    moeda(
+                      context.raw
+                    )
+
+              }
+
+            }
+
+          },
+
+          scales: {
+
+            y: {
+
+              beginAtZero:
+                true,
+
+              ticks: {
+
+                callback:
+                  value =>
+                    moeda(value)
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+
+    );
+
+}
+
+
+/* =====================================================
+   FILTROS
+===================================================== */
+
+filtroMes.addEventListener(
+  "change",
+  atualizarDashboard
+);
+
+
+filtroFornecedor.addEventListener(
+  "change",
+  atualizarDashboard
+);
+
+
+filtroStatus.addEventListener(
+  "change",
+  atualizarDashboard
+);
+
+
+/* =====================================================
+   INICIALIZAÇÃO
+===================================================== */
+
+atualizarDashboard();
+
+<\/script>
+
+</body>
+
+</html>
+
+  `;
+
+
+  const blob =
+    new Blob(
+      [
+        dashboardHTML
+      ],
+      {
+        type:
+          "text/html"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const novaGuia =
+    window.open(
+      url,
+      "_blank"
+    );
+
+
+  if (!novaGuia) {
+
+    mostrarMensagem(
+      "O navegador bloqueou a nova guia. Permita pop-ups para este site.",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   DATA INICIAL
+========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  async () => {
+
+    atualizarCamposPagamento();
+
+    await verificarSessao();
+
+  }
+);
+
+</script>
+
+</body>
+
+</html>
